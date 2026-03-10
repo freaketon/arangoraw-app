@@ -1,14 +1,11 @@
 // ============================================================
-// ArangoRAW â Database Barrel Export
+// ArangoRAW - Database Barrel Export
 // ============================================================
 
 export { initializeDataStore } from './store';
 
 // Episodes
 export * from './episodes';
-
-// Stories
-export * from './stories';
 
 // Research
 export * from './research';
@@ -21,9 +18,6 @@ export * from './weekly-cycles';
 
 // Metadata Packs
 export * from './metadata-packs';
-
-// Thumbnail Packs
-export * from './thumbnail-packs';
 
 // Shorts Packs
 export * from './shorts-packs';

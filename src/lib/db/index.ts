@@ -7,6 +7,9 @@ export { initializeDataStore } from './store';
 // Episodes
 export * from './episodes';
 
+// Stories
+export * from './stories';
+
 // Research
 export * from './research';
 

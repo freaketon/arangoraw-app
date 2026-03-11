@@ -1,10 +1,27 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Card, { CardHeader, CardBody } from '@/components/ui/Card';
 import Badge, { StateBadge } from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
+
+interface PlanProgress {
+  step: string;
+  status: string;
+  message?: string;
+  index?: number;
+  title?: string;
+  error?: string;
+  summary?: {
+    week_id: string;
+    week_theme: string;
+    episodes_created: number;
+    scripts_generated: number;
+    scripts_failed: number;
+    episodes: Array<{ episode_id: string; working_title: string; script_status: string; script_title: string | null }>;
+  };
+}
 
 export default function WeeklyPlannerPage() {
   const [weeks, setWeeks] = useState<any[]>([]);
@@ -13,7 +30,15 @@ export default function WeeklyPlannerPage() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
 
-  async function load() {
+  // AI Plan state
+  const [planning, setPlanning] = useState(false);
+  const [planProgress, setPlanProgress] = useState<PlanProgress[]>([]);
+  const [planComplete, setPlanComplete] = useState(false);
+
+  // Regenerate script state
+  const [regenerating, setRegenerating] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const [weekRes, epRes] = await Promise.all([
@@ -24,15 +49,14 @@ export default function WeeklyPlannerPage() {
       const epData = epRes.ok ? await epRes.json() : [];
       const allWeeks = Array.isArray(weekData) ? weekData : [];
       setWeeks(allWeeks);
-      // Find current (most recent non-archived)
       const curr = allWeeks.find((w: any) => w.state !== 'Archived' && w.state !== 'Completed') || allWeeks[0] || null;
       setCurrentWeek(curr);
       setEpisodes(Array.isArray(epData) ? epData : []);
     } catch { setWeeks([]); setEpisodes([]); }
     setLoading(false);
-  }
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   async function createWeek(form: any) {
     await fetch('/api/weekly-cycles', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
@@ -56,6 +80,63 @@ export default function WeeklyPlannerPage() {
     load();
   }
 
+  // ── Plan Week with AI ──
+  async function planWeekWithAI() {
+    setPlanning(true);
+    setPlanProgress([]);
+    setPlanComplete(false);
+
+    try {
+      const res = await fetch('/api/ai/plan-week', { method: 'POST' });
+      if (!res.body) throw new Error('No response stream');
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6)) as PlanProgress;
+              setPlanProgress(prev => [...prev, data]);
+              if (data.step === 'complete' || data.step === 'error') {
+                setPlanComplete(true);
+              }
+            } catch {}
+          }
+        }
+      }
+    } catch (err) {
+      setPlanProgress(prev => [...prev, { step: 'error', status: 'failed', error: err instanceof Error ? err.message : 'Failed' }]);
+      setPlanComplete(true);
+    } finally {
+      setPlanning(false);
+      load();
+    }
+  }
+
+  // ── Regenerate Script ──
+  async function regenerateScript(episodeId: string) {
+    setRegenerating(episodeId);
+    try {
+      await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'generate_script', episode_id: episodeId }),
+      });
+      load();
+    } catch {}
+    setRegenerating(null);
+  }
+
   if (loading) return <div className="text-text-muted text-sm text-center py-12">Loading planner...</div>;
 
   const weekEpisodes = currentWeek?.episode_ids
@@ -66,6 +147,39 @@ export default function WeeklyPlannerPage() {
 
   return (
     <div className="space-y-6">
+      {/* AI Plan Progress */}
+      {(planning || planProgress.length > 0) && (
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <span className="text-sm font-medium text-text-primary">🤖 AI Plan Week</span>
+            {planComplete && (
+              <Button size="sm" variant="ghost" onClick={() => { setPlanProgress([]); setPlanComplete(false); }}>Dismiss</Button>
+            )}
+          </CardHeader>
+          <CardBody>
+            <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
+              {planProgress.map((p, i) => (
+                <div key={i} className={`text-xs flex items-center gap-2 ${
+                  p.status === 'failed' ? 'text-red-400' : p.status === 'done' ? 'text-green-400' : 'text-text-muted'
+                }`}>
+                  <span>{p.status === 'generating' || p.status === 'creating' ? '⏳' : p.status === 'done' ? '✓' : '✗'}</span>
+                  <span>{p.message || p.title || p.error || `${p.step}: ${p.status}`}</span>
+                </div>
+              ))}
+              {planning && <div className="text-xs text-accent-gold-dim animate-pulse">Working...</div>}
+            </div>
+            {planComplete && planProgress.find(p => p.step === 'complete')?.summary && (
+              <div className="mt-3 pt-3 border-t border-border text-xs text-text-secondary">
+                {(() => {
+                  const s = planProgress.find(p => p.step === 'complete')!.summary!;
+                  return `Created ${s.episodes_created} episodes, ${s.scripts_generated} scripts generated${s.scripts_failed > 0 ? `, ${s.scripts_failed} failed` : ''}`;
+                })()}
+              </div>
+            )}
+          </CardBody>
+        </Card>
+      )}
+
       {/* Week Selector */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -79,12 +193,24 @@ export default function WeeklyPlannerPage() {
             ))}
           </div>
         </div>
-        <Button size="sm" onClick={() => setShowCreate(true)}>+ New Week</Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="secondary" onClick={planWeekWithAI} disabled={planning}>
+            {planning ? '⏳ Planning...' : '🤖 Plan Week with AI'}
+          </Button>
+          <Button size="sm" onClick={() => setShowCreate(true)}>+ New Week</Button>
+        </div>
       </div>
 
       {!currentWeek ? (
-        <EmptyState icon="â¦" title="No Weekly Cycles" description="Create your first weekly cycle to start planning."
-          action={<Button onClick={() => setShowCreate(true)}>Create Week</Button>} />
+        <EmptyState icon="📅" title="No Weekly Cycles" description="Create your first weekly cycle or let AI plan one for you."
+          action={
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={planWeekWithAI} disabled={planning}>
+                {planning ? '⏳ Planning...' : '🤖 Plan Week with AI'}
+              </Button>
+              <Button onClick={() => setShowCreate(true)}>Create Manually</Button>
+            </div>
+          } />
       ) : (
         <div className="grid grid-cols-3 gap-6">
           {/* Week Overview */}
@@ -102,24 +228,24 @@ export default function WeeklyPlannerPage() {
                     <Button size="sm" variant="secondary" onClick={() => lockWeek(currentWeek.cycle_id)}>Lock Week</Button>
                   )}
                   {currentWeek.state === 'Planning' && (
-                    <Button size="sm" onClick={() => transitionWeek(currentWeek.cycle_id, 'Locked')}>â Lock</Button>
+                    <Button size="sm" onClick={() => transitionWeek(currentWeek.cycle_id, 'Locked')}>→ Lock</Button>
                   )}
                   {currentWeek.state === 'Locked' && (
-                    <Button size="sm" onClick={() => transitionWeek(currentWeek.cycle_id, 'In Production')}>â Production</Button>
+                    <Button size="sm" onClick={() => transitionWeek(currentWeek.cycle_id, 'In Production')}>→ Production</Button>
                   )}
                   {currentWeek.state === 'In Production' && (
-                    <Button size="sm" onClick={() => transitionWeek(currentWeek.cycle_id, 'Review')}>â Review</Button>
+                    <Button size="sm" onClick={() => transitionWeek(currentWeek.cycle_id, 'Review')}>→ Review</Button>
                   )}
                   {currentWeek.state === 'Review' && (
-                    <Button size="sm" onClick={() => transitionWeek(currentWeek.cycle_id, 'Published')}>â Publish</Button>
+                    <Button size="sm" onClick={() => transitionWeek(currentWeek.cycle_id, 'Published')}>→ Publish</Button>
                   )}
                 </div>
               </CardHeader>
               <CardBody>
                 <div className="grid grid-cols-3 gap-4 text-xs">
-                  <div><span className="text-text-muted">Theme:</span> <span className="text-text-secondary">{currentWeek.theme || 'â'}</span></div>
-                  <div><span className="text-text-muted">Start:</span> <span className="text-text-secondary">{currentWeek.start_date ? new Date(currentWeek.start_date).toLocaleDateString() : 'â'}</span></div>
-                  <div><span className="text-text-muted">End:</span> <span className="text-text-secondary">{currentWeek.end_date ? new Date(currentWeek.end_date).toLocaleDateString() : 'â'}</span></div>
+                  <div><span className="text-text-muted">Theme:</span> <span className="text-text-secondary">{currentWeek.theme || currentWeek.week_theme || '—'}</span></div>
+                  <div><span className="text-text-muted">Start:</span> <span className="text-text-secondary">{currentWeek.start_date ? new Date(currentWeek.start_date).toLocaleDateString() : '—'}</span></div>
+                  <div><span className="text-text-muted">End:</span> <span className="text-text-secondary">{currentWeek.end_date ? new Date(currentWeek.end_date).toLocaleDateString() : '—'}</span></div>
                 </div>
               </CardBody>
             </Card>
@@ -134,11 +260,24 @@ export default function WeeklyPlannerPage() {
                   <div className="space-y-2">
                     {weekEpisodes.map(ep => (
                       <div key={ep.episode_id} className="flex items-center justify-between py-2 px-3 rounded bg-bg-tertiary">
-                        <div>
-                          <div className="text-sm text-text-primary">{ep.title}</div>
-                          <div className="text-xs text-text-muted">Ep {ep.episode_number || 'â'}</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm text-text-primary">{ep.working_title || ep.title}</div>
+                          <div className="text-xs text-text-muted flex items-center gap-2">
+                            <span>{ep.pillar}</span>
+                            {ep.core_thesis && <span>· {ep.core_thesis.slice(0, 60)}{ep.core_thesis.length > 60 ? '...' : ''}</span>}
+                          </div>
                         </div>
-                        <StateBadge state={ep.state} />
+                        <div className="flex items-center gap-2">
+                          <StateBadge state={ep.state} />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => regenerateScript(ep.episode_id)}
+                            disabled={regenerating === ep.episode_id}
+                          >
+                            {regenerating === ep.episode_id ? '⏳' : '🔄 Script'}
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -164,7 +303,7 @@ export default function WeeklyPlannerPage() {
             )}
           </div>
 
-          {/* Sidebar â Available Episodes */}
+          {/* Sidebar — Available Episodes */}
           <div className="space-y-4">
             <Card>
               <CardHeader><span className="text-sm font-medium">Available Episodes</span></CardHeader>
@@ -209,7 +348,7 @@ function AddEpisodeRow({ episode, weekId, locked, onAdd }: { episode: any; weekI
   return (
     <div className="flex items-center justify-between py-1.5">
       <div className="min-w-0 flex-1">
-        <div className="text-xs text-text-secondary truncate">{episode.title}</div>
+        <div className="text-xs text-text-secondary truncate">{episode.working_title || episode.title}</div>
         <StateBadge state={episode.state} />
       </div>
       {!locked && <Button size="sm" variant="ghost" onClick={add}>Add</Button>}
@@ -230,7 +369,7 @@ function CreateWeekModal({ onClose, onCreate }: { onClose: () => void; onCreate:
           <div>
             <label className="text-[11px] text-text-muted uppercase tracking-wider block mb-1">Week Label</label>
             <input value={form.week_label} onChange={e => setForm({ ...form, week_label: e.target.value })}
-              className="w-full bg-bg-primary border border-border rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-gold-dim" placeholder="e.g. Week 12 â Mar 17-23" />
+              className="w-full bg-bg-primary border border-border rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-gold-dim" placeholder="e.g. Week 12 — Mar 17-23" />
           </div>
           <div>
             <label className="text-[11px] text-text-muted uppercase tracking-wider block mb-1">Theme</label>

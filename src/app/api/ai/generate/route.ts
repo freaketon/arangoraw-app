@@ -67,18 +67,6 @@ export async function POST(request: NextRequest) {
     }
 
     const agentName = ACTION_AGENT_MAP[action];
-    const executionStart = new Date().toISOString();
-
-    // Log execution start
-    const execution = logExecution({
-      agent_name: agentName,
-      prompt_version: 'v1',
-      input_payload: body,
-      output_payload: {},
-      status: 'Running',
-      episode_id: episode_id || undefined,
-      started_at: executionStart,
-    });
 
     try {
       let result: unknown;
@@ -92,10 +80,9 @@ export async function POST(request: NextRequest) {
           const research = episode.primary_reference_id ? getReference(episode.primary_reference_id) : null;
           const generated = await generateScript(episode, story, research);
 
-          // Save script to DB
+          // Save script to DB (version and approval_state are auto-set internally)
           const script = createScript({
             episode_id,
-            version: 1,
             title_candidate: generated.title_candidate,
             core_thesis: generated.core_thesis,
             artifact: generated.artifact,
@@ -104,7 +91,6 @@ export async function POST(request: NextRequest) {
             echo: generated.echo,
             full_script: generated.full_script,
             highlight_lines: generated.highlight_lines,
-            approval_state: 'Pending',
             created_by_agent: 'Script Architect',
           });
 
@@ -167,12 +153,14 @@ export async function POST(request: NextRequest) {
 
           const pack = createShortsPack({
             episode_id,
-            clips: generated.clips.map((c, i) => ({
+            clips: generated.clips.map((c: { hook: string; script: string; platform: string }, i: number) => ({
               clip_id: `clip-${i + 1}`,
               hook: c.hook,
               script: c.script,
               platform: c.platform as 'YouTube' | 'Instagram',
             })),
+            captions: generated.captions || [],
+            platform_recommendations: generated.platform_recommendations || [],
             status: 'Draft',
           });
 
@@ -184,20 +172,16 @@ export async function POST(request: NextRequest) {
           if (!raw_input) return NextResponse.json({ error: 'raw_input required' }, { status: 400 });
           const generated = await extractStory(raw_input);
 
+          // Map AI output to Story interface fields
           const story = createStory({
             title: generated.title,
-            era: generated.era as any,
-            story_type: generated.story_type,
-            raw_event_summary: generated.raw_event_summary,
-            sensory_details: generated.sensory_details,
-            emotional_truth: generated.emotional_truth,
-            philosophical_lesson: generated.philosophical_lesson,
-            related_pillars: generated.related_pillars as any[],
-            confidence_level: generated.confidence_level as any,
-            tags: generated.tags,
-            intake_state: 'Extracted',
-            permission_level: 'Internal Only',
-            source: 'AI Extraction',
+            hook: generated.emotional_truth || generated.raw_event_summary || '',
+            narrative: generated.raw_event_summary || '',
+            pillar: generated.related_pillars?.[0] || 'Psychology of Chaos',
+            era: generated.era || '',
+            tags: generated.tags || [],
+            state: 'intake',
+            publishable: false,
           });
 
           result = { story, generated };
@@ -211,20 +195,19 @@ export async function POST(request: NextRequest) {
           const story = episode.primary_story_id ? getStory(episode.primary_story_id) : null;
           const suggestions = await suggestResearch(episode, story);
 
-          // Save each suggestion as a reference
-          const references = suggestions.map(s =>
+          // Save each suggestion (approved_status is set internally to false)
+          const references = suggestions.map((s: Record<string, unknown>) =>
             createReference({
-              title: s.title,
-              reference_type: s.reference_type as any,
-              domain: s.domain,
-              core_summary: s.core_summary,
-              primary_lesson: s.primary_lesson,
-              why_it_fits: s.why_it_fits,
-              risk_note: s.risk_note,
-              source_quality: s.source_quality as any,
-              overuse_risk: s.overuse_risk as any,
-              tags: s.tags,
-              approved_status: false,
+              title: s.title as string,
+              reference_type: s.reference_type as string as any,
+              domain: s.domain as string,
+              core_summary: s.core_summary as string,
+              primary_lesson: s.primary_lesson as string,
+              why_it_fits: s.why_it_fits as string,
+              risk_note: s.risk_note as string,
+              source_quality: s.source_quality as string as any,
+              overuse_risk: s.overuse_risk as string as any,
+              tags: s.tags as string[],
             })
           );
 
@@ -242,7 +225,7 @@ export async function POST(request: NextRequest) {
           const plan = createStoryPlan({
             date: new Date().toISOString().split('T')[0],
             objective: generated.objective,
-            frames: generated.frames.map(f => ({
+            frames: generated.frames.map((f: Record<string, unknown>) => ({
               frame_id: `frame-${f.order}`,
               ...f,
             })),
@@ -272,29 +255,39 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Update execution as success
+      // Log execution as success (single log, no spread)
       logExecution({
-        ...execution,
-        output_payload: result,
+        agent_name: agentName,
+        prompt_version: 'v1',
+        input_payload: body,
+        output_payload: (result as Record<string, unknown>) || null,
         status: 'Success',
-        completed_at: new Date().toISOString(),
+        episode_id: episode_id || null,
+        retry_count: 0,
       });
 
       return NextResponse.json({ success: true, agent: agentName, result });
-    } catch (aiError: any) {
-      // Update execution as failed
+    } catch (aiError: unknown) {
+      const errorMessage = aiError instanceof Error ? aiError.message : 'Unknown error';
+
+      // Log execution as failed (single log, no spread)
       logExecution({
-        ...execution,
+        agent_name: agentName,
+        prompt_version: 'v1',
+        input_payload: body,
+        output_payload: null,
         status: 'Failed',
-        error_message: aiError.message,
-        completed_at: new Date().toISOString(),
+        episode_id: episode_id || null,
+        retry_count: 0,
+        error_message: errorMessage,
       });
       throw aiError;
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Generation failed';
     console.error('AI generation error:', error);
     return NextResponse.json(
-      { error: error.message || 'Generation failed' },
+      { error: errorMessage },
       { status: 500 },
     );
   }

@@ -22,6 +22,9 @@ export * from './weekly-cycles';
 // Metadata Packs
 export * from './metadata-packs';
 
+// Thumbnail Packs
+export * from './thumbnail-packs';
+
 // Shorts Packs
 export * from './shorts-packs';
 

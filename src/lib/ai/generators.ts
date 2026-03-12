@@ -65,6 +65,50 @@ Return JSON with: title_candidate, core_thesis, artifact, labyrinth, twist, echo
   return generateJSON<GeneratedScript>({ ...agentPrompt('Script Architect', task), maxTokens: 8192 });
 }
 
+// ─── Section Rewrite ───
+
+export async function rewriteScriptSection(
+  section: 'artifact' | 'labyrinth' | 'twist' | 'echo',
+  currentScript: { artifact: string; labyrinth: string; twist: string; echo: string; title_candidate: string; core_thesis: string },
+  episode: Episode,
+  story?: StoryRecord | null,
+  research?: ResearchReference | null,
+): Promise<string> {
+  const sectionLabels: Record<string, string> = {
+    artifact: 'ARTIFACT (The opening hook)',
+    labyrinth: 'LABYRINTH (The deep exploration)',
+    twist: 'TWIST (The reframe)',
+    echo: 'ECHO (The landing)',
+  };
+
+  const otherSections = (['artifact', 'labyrinth', 'twist', 'echo'] as const)
+    .filter(s => s !== section)
+    .map(s => `${s.toUpperCase()}: ${currentScript[s].slice(0, 200)}...`)
+    .join('\n\n');
+
+  const task = `Rewrite ONLY the ${sectionLabels[section]} section of this script. Keep the same voice, thesis, and narrative thread but make it stronger, sharper, and more compelling.
+
+EPISODE:
+- Title: ${episode.working_title}
+- Pillar: ${episode.pillar}
+- Core Thesis: ${currentScript.core_thesis}
+
+${story ? `PERSONAL STORY:\n- Title: ${story.title}\n- Emotional Truth: ${story.emotional_truth}` : ''}
+
+${research ? `RESEARCH:\n- Title: ${research.title}\n- Primary Lesson: ${research.primary_lesson}` : ''}
+
+OTHER SECTIONS (for context, do NOT rewrite these):
+${otherSections}
+
+CURRENT ${section.toUpperCase()} (rewrite this):
+${currentScript[section]}
+
+Return JSON with a single key "${section}" containing the rewritten text.`;
+
+  const result = await generateJSON<Record<string, string>>({ ...agentPrompt('Script Architect', task), maxTokens: 4096 });
+  return result[section] || '';
+}
+
 // ─── Metadata Generation ───
 
 export interface GeneratedMetadata {

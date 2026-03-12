@@ -131,7 +131,7 @@ export default function ThisWeekPage() {
     }
   }, [planComplete, planning]);
 
-  // \u2500\u2500 Plan Week with AI \u2500\u2500
+  // Plan Week with AI
   async function planWeekWithAI() {
     setShowPlanConfirm(false);
     setPlanning(true);
@@ -178,7 +178,7 @@ export default function ThisWeekPage() {
     }
   }
 
-  // \u2500\u2500 Regenerate Script \u2500\u2500
+  // Regenerate Script
   async function regenerateScript(episodeId: string) {
     setRegenerating(episodeId);
     try {
@@ -192,7 +192,7 @@ export default function ThisWeekPage() {
     setRegenerating(null);
   }
 
-  // \u2500\u2500 Save section edit \u2500\u2500
+  // Save section edit
   async function saveSection() {
     if (!editingSection) return;
     setSavingEdit(true);
@@ -215,7 +215,7 @@ export default function ThisWeekPage() {
     setEditText(currentText);
   }
 
-  // \u2500\u2500 AI rewrite section \u2500\u2500
+  // AI rewrite section
   const [rewriting, setRewriting] = useState<{ episodeId: string; section: string } | null>(null);
 
   async function rewriteSection(episodeId: string, section: string) {
@@ -275,7 +275,7 @@ export default function ThisWeekPage() {
       {showPlanConfirm && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setShowPlanConfirm(false)}>
           <div className="bg-bg-secondary border border-border rounded-lg p-5 max-w-sm mx-4 space-y-3" onClick={e => e.stopPropagation()}>
-            <p className="text-sm text-text-primary">This will replace the current week\u2019s episodes and scripts. Continue?</p>
+            <p className="text-sm text-text-primary">This will replace the current week&apos;s episodes and scripts. Continue?</p>
             <div className="flex gap-2 justify-end">
               <Button size="sm" variant="ghost" onClick={() => setShowPlanConfirm(false)}>Cancel</Button>
               <Button size="sm" onClick={planWeekWithAI}>Yes, Plan New Week</Button>
@@ -355,11 +355,11 @@ export default function ThisWeekPage() {
                       </div>
                       <div className="text-xs text-text-muted mt-0.5 flex items-center gap-2">
                         <span className="text-text-muted/60">{ep._day}</span>
-                        <span>{' \u00b7 '}</span>
+                        <span>{'\u00b7'}</span>
                         <span>{ep.pillar}</span>
                         {ep.core_thesis && (
                           <span className="truncate max-w-[300px]">
-                            {' \u00b7 '}{ep.core_thesis}
+                            {'\u00b7 '}{ep.core_thesis}
                           </span>
                         )}
                       </div>

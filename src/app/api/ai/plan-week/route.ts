@@ -102,10 +102,10 @@ export async function POST(request: NextRequest) {
 
         // Add episodes to week
         for (const ep of createdEpisodes) {
-          addEpisodeToWeek(week.cycle_id, ep.episode_id);
+          addEpisodeToWeek(week.week_id, ep.episode_id);
         }
 
-        send({ step: 'week', status: 'done', week_id: week.cycle_id });
+        send({ step: 'week', status: 'done', week_id: week.week_id });
 
         // Step 4: Generate scripts for each episode
         const scripts: Array<{ episode_id: string; title: string; status: string }> = [];
@@ -136,7 +136,13 @@ export async function POST(request: NextRequest) {
               created_by_agent: 'Script Architect',
             });
 
-            try { transitionEpisode(ep.episode_id, 'Script Drafted'); } catch {}
+            // Walk the state machine: Idea → Selected → Story Matched → Research Matched → Script Drafted
+            try {
+              transitionEpisode(ep.episode_id, 'Selected');
+              transitionEpisode(ep.episode_id, 'Story Matched');
+              transitionEpisode(ep.episode_id, 'Research Matched');
+              transitionEpisode(ep.episode_id, 'Script Drafted');
+            } catch {}
 
             logExecution({
               agent_name: 'Script Architect',
@@ -162,7 +168,7 @@ export async function POST(request: NextRequest) {
           step: 'complete',
           status: 'done',
           summary: {
-            week_id: week.cycle_id,
+            week_id: week.week_id,
             week_theme: strategy.week_theme,
             episodes_created: createdEpisodes.length,
             scripts_generated: scripts.filter(s => s.status === 'done').length,

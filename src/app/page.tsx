@@ -86,7 +86,7 @@ export default function ThisWeekPage() {
       const weekData = weekRes.ok ? await weekRes.json() : [];
       const epData = epRes.ok ? await epRes.json() : [];
       const allWeeks = Array.isArray(weekData) ? weekData : [];
-      const curr = allWeeks.find((w: any) => w.state !== 'Archived' && w.state !== 'Completed') || allWeeks[0] || null;
+      const curr = allWeeks.find((w: any) => w.planning_state !== 'Archived' && w.planning_state !== 'Complete') || allWeeks[0] || null;
       setWeek(curr);
 
       const allEpisodes = Array.isArray(epData) ? epData : [];

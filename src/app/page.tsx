@@ -41,10 +41,10 @@ interface ScriptData {
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 const SECTION_SUBTITLES: Record<string, string> = {
-  artifact: 'The hook — what grabs attention',
-  labyrinth: 'The tension — the challenge or conflict',
-  twist: 'The shift — the unexpected insight',
-  echo: 'The resonance — what stays with them',
+  artifact: 'The hook \u2014 what grabs attention',
+  labyrinth: 'The tension \u2014 the challenge or conflict',
+  twist: 'The shift \u2014 the unexpected insight',
+  echo: 'The resonance \u2014 what stays with them',
 };
 
 const STATE_BORDER_COLORS: Record<string, string> = {
@@ -85,7 +85,8 @@ export default function ThisWeekPage() {
       ]);
       const weekData = weekRes.ok ? await weekRes.json() : [];
       const epData = epRes.ok ? await epRes.json() : [];
-      const allWeeks = Array.isArray(weekData) ? weekData : [];
+      const allWeeks = (Array.isArray(weekData) ? weekData : [])
+        .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       const curr = allWeeks.find((w: any) => w.planning_state !== 'Archived' && w.planning_state !== 'Complete') || allWeeks[0] || null;
       setWeek(curr);
 
@@ -130,7 +131,7 @@ export default function ThisWeekPage() {
     }
   }, [planComplete, planning]);
 
-  // ── Plan Week with AI ──
+  // \u2500\u2500 Plan Week with AI \u2500\u2500
   async function planWeekWithAI() {
     setShowPlanConfirm(false);
     setPlanning(true);
@@ -177,7 +178,7 @@ export default function ThisWeekPage() {
     }
   }
 
-  // ── Regenerate Script ──
+  // \u2500\u2500 Regenerate Script \u2500\u2500
   async function regenerateScript(episodeId: string) {
     setRegenerating(episodeId);
     try {
@@ -191,7 +192,7 @@ export default function ThisWeekPage() {
     setRegenerating(null);
   }
 
-  // ── Save section edit ──
+  // \u2500\u2500 Save section edit \u2500\u2500
   async function saveSection() {
     if (!editingSection) return;
     setSavingEdit(true);
@@ -214,7 +215,7 @@ export default function ThisWeekPage() {
     setEditText(currentText);
   }
 
-  // ── AI rewrite section ──
+  // \u2500\u2500 AI rewrite section \u2500\u2500
   const [rewriting, setRewriting] = useState<{ episodeId: string; section: string } | null>(null);
 
   async function rewriteSection(episodeId: string, section: string) {
@@ -295,7 +296,7 @@ export default function ThisWeekPage() {
                 <div key={i} className={`text-xs flex items-center gap-2 ${
                   p.status === 'failed' ? 'text-red-400' : p.status === 'done' ? 'text-green-400' : 'text-text-muted'
                 }`}>
-                  <span>{p.status === 'generating' || p.status === 'creating' ? '...' : p.status === 'done' ? '✓' : '✗'}</span>
+                  <span>{p.status === 'generating' || p.status === 'creating' ? '...' : p.status === 'done' ? '\u2713' : '\u2717'}</span>
                   <span>{p.message || p.title || p.error || `${p.step}: ${p.status}`}</span>
                 </div>
               ))}
@@ -314,8 +315,8 @@ export default function ThisWeekPage() {
           {week && (
             <div className="text-xs text-text-muted mt-1">
               {week.start_date && new Date(week.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              {week.end_date && ` — ${new Date(week.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
-              {' · '}{episodes.length} episode{episodes.length !== 1 ? 's' : ''}
+              {week.end_date && ` \u2014 ${new Date(week.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+              {' \u00b7 '}{episodes.length} episode{episodes.length !== 1 ? 's' : ''}
             </div>
           )}
         </div>
@@ -354,11 +355,11 @@ export default function ThisWeekPage() {
                       </div>
                       <div className="text-xs text-text-muted mt-0.5 flex items-center gap-2">
                         <span className="text-text-muted/60">{ep._day}</span>
-                        <span>·</span>
+                        <span>\u00b7</span>
                         <span>{ep.pillar}</span>
                         {ep.core_thesis && (
                           <span className="truncate max-w-[300px]">
-                            · {ep.core_thesis}
+                            \u00b7 {ep.core_thesis}
                           </span>
                         )}
                       </div>
@@ -368,7 +369,7 @@ export default function ThisWeekPage() {
                       {script && (
                         <span className="text-[10px] text-text-muted">v{script.version}</span>
                       )}
-                      <span className="text-text-muted text-xs">{isExpanded ? '▾' : '▸'}</span>
+                      <span className="text-text-muted text-xs">{isExpanded ? '\u25be' : '\u25b8'}</span>
                     </div>
                   </div>
                 </div>

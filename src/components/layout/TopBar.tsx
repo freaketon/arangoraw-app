@@ -3,14 +3,8 @@
 import { usePathname } from 'next/navigation';
 
 const PAGE_TITLES: Record<string, string> = {
-  '/dashboard': 'Command Center',
-  '/weekly-planner': 'Weekly Planner',
-  '/episodes': 'Episodes',
-  '/story-library': 'Story Library',
-  '/research-library': 'Research Library',
-  '/script-studio': 'Script Studio',
-  '/packaging-studio': 'Packaging Studio',
-  '/analytics': 'Analytics',
+  '/': 'This Week',
+  '/stories': 'Stories',
   '/settings': 'Settings',
 };
 

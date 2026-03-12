@@ -40,6 +40,21 @@ interface ScriptData {
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+const SECTION_SUBTITLES: Record<string, string> = {
+  artifact: 'The hook — what grabs attention',
+  labyrinth: 'The tension — the challenge or conflict',
+  twist: 'The shift — the unexpected insight',
+  echo: 'The resonance — what stays with them',
+};
+
+const STATE_BORDER_COLORS: Record<string, string> = {
+  Draft: 'border-l-zinc-600',
+  'In Progress': 'border-l-blue-500',
+  Approved: 'border-l-[#c9a84c]',
+  Published: 'border-l-green-500',
+  Archived: 'border-l-zinc-700',
+};
+
 export default function ThisWeekPage() {
   const [week, setWeek] = useState<any | null>(null);
   const [episodes, setEpisodes] = useState<any[]>([]);
@@ -57,6 +72,9 @@ export default function ThisWeekPage() {
 
   // Regenerate script state
   const [regenerating, setRegenerating] = useState<string | null>(null);
+
+  // Confirm dialog
+  const [showPlanConfirm, setShowPlanConfirm] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -86,7 +104,7 @@ export default function ThisWeekPage() {
             if (sRes.ok) {
               const sData = await sRes.json();
               const arr = Array.isArray(sData) ? sData : [];
-              if (arr.length > 0) scriptMap[ep.episode_id] = arr[0]; // latest version
+              if (arr.length > 0) scriptMap[ep.episode_id] = arr[0];
             }
           } catch {}
         })
@@ -101,8 +119,20 @@ export default function ThisWeekPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Auto-dismiss AI planning card after 3 seconds on completion
+  useEffect(() => {
+    if (planComplete && !planning) {
+      const timer = setTimeout(() => {
+        setPlanProgress([]);
+        setPlanComplete(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [planComplete, planning]);
+
   // ── Plan Week with AI ──
   async function planWeekWithAI() {
+    setShowPlanConfirm(false);
     setPlanning(true);
     setPlanProgress([]);
     setPlanComplete(false);
@@ -136,6 +166,14 @@ export default function ThisWeekPage() {
     } finally {
       setPlanning(false);
       load();
+    }
+  }
+
+  function handlePlanClick() {
+    if (episodes.length > 0) {
+      setShowPlanConfirm(true);
+    } else {
+      planWeekWithAI();
     }
   }
 
@@ -198,28 +236,58 @@ export default function ThisWeekPage() {
     setRewriting(null);
   }
 
-  if (loading) return <div className="text-text-muted text-sm text-center py-12">Loading...</div>;
+  // Loading skeleton
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="h-5 w-48 bg-bg-tertiary rounded animate-pulse" />
+            <div className="h-3 w-32 bg-bg-tertiary rounded animate-pulse mt-2" />
+          </div>
+          <div className="h-9 w-36 bg-bg-tertiary rounded animate-pulse" />
+        </div>
+        {[1, 2, 3].map(i => (
+          <div key={i} className="bg-bg-secondary border border-border rounded-lg p-4 space-y-2">
+            <div className="h-4 w-64 bg-bg-tertiary rounded animate-pulse" />
+            <div className="h-3 w-40 bg-bg-tertiary rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   // Map episodes to days (distribute evenly)
   const dayMap: Record<string, any[]> = {};
   DAYS.forEach(d => (dayMap[d] = []));
   episodes.forEach((ep, i) => {
     const day = DAYS[i % DAYS.length];
-    dayMap[day].push(ep);
+    dayMap[day].push({ ...ep, _day: day });
   });
+
+  // Flatten to a single ordered list with day labels inline
+  const flatEpisodes = DAYS.flatMap(day => dayMap[day]);
 
   return (
     <div className="space-y-6">
+      {/* Confirm Dialog */}
+      {showPlanConfirm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setShowPlanConfirm(false)}>
+          <div className="bg-bg-secondary border border-border rounded-lg p-5 max-w-sm mx-4 space-y-3" onClick={e => e.stopPropagation()}>
+            <p className="text-sm text-text-primary">This will replace the current week's episodes and scripts. Continue?</p>
+            <div className="flex gap-2 justify-end">
+              <Button size="sm" variant="ghost" onClick={() => setShowPlanConfirm(false)}>Cancel</Button>
+              <Button size="sm" onClick={planWeekWithAI}>Yes, Plan New Week</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* AI Progress */}
       {(planning || planProgress.length > 0) && (
         <Card>
           <CardHeader className="flex items-center justify-between">
             <span className="text-sm font-medium text-text-primary">AI Planning</span>
-            {planComplete && (
-              <Button size="sm" variant="ghost" onClick={() => { setPlanProgress([]); setPlanComplete(false); }}>
-                Dismiss
-              </Button>
-            )}
           </CardHeader>
           <CardBody>
             <div className="space-y-1 max-h-[180px] overflow-y-auto">
@@ -251,189 +319,186 @@ export default function ThisWeekPage() {
             </div>
           )}
         </div>
-        <Button onClick={planWeekWithAI} disabled={planning}>
+        <Button onClick={handlePlanClick} disabled={planning}>
           {planning ? 'Planning...' : 'Plan Week with AI'}
         </Button>
       </div>
 
       {!week && episodes.length === 0 ? (
         <EmptyState
-          icon="▦"
+          icon={<svg className="w-8 h-8 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>}
           title="No content yet"
           description="Hit 'Plan Week with AI' to generate your first week of episodes and scripts."
           action={
-            <Button onClick={planWeekWithAI} disabled={planning}>
+            <Button onClick={handlePlanClick} disabled={planning}>
               {planning ? 'Planning...' : 'Plan Week with AI'}
             </Button>
           }
         />
       ) : (
-        <div className="space-y-4">
-          {DAYS.map(day => {
-            const dayEps = dayMap[day];
-            if (dayEps.length === 0) return null;
+        <div className="space-y-2">
+          {flatEpisodes.map(ep => {
+            const script = scripts[ep.episode_id];
+            const isExpanded = expandedEpisode === ep.episode_id;
+            const borderColor = STATE_BORDER_COLORS[ep.state] || 'border-l-zinc-600';
             return (
-              <div key={day}>
-                <div className="text-xs text-text-muted uppercase tracking-wider mb-2">{day}</div>
-                <div className="space-y-3">
-                  {dayEps.map(ep => {
-                    const script = scripts[ep.episode_id];
-                    const isExpanded = expandedEpisode === ep.episode_id;
-                    return (
-                      <Card key={ep.episode_id}>
-                        <div
-                          className="px-4 py-3 cursor-pointer hover:bg-bg-hover transition-colors"
-                          onClick={() => setExpandedEpisode(isExpanded ? null : ep.episode_id)}
+              <Card key={ep.episode_id} className={`border-l-2 ${borderColor}`}>
+                <div
+                  className="px-4 py-3 cursor-pointer hover:bg-bg-hover transition-colors"
+                  onClick={() => setExpandedEpisode(isExpanded ? null : ep.episode_id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium text-text-primary">
+                        {ep.working_title || ep.title}
+                      </div>
+                      <div className="text-xs text-text-muted mt-0.5 flex items-center gap-2">
+                        <span className="text-text-muted/60">{ep._day}</span>
+                        <span>·</span>
+                        <span>{ep.pillar}</span>
+                        {ep.core_thesis && (
+                          <span className="truncate max-w-[300px]">
+                            · {ep.core_thesis}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <StateBadge state={ep.state} />
+                      {script && (
+                        <span className="text-[10px] text-text-muted">v{script.version}</span>
+                      )}
+                      <span className="text-text-muted text-xs">{isExpanded ? '▾' : '▸'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Expanded: Script sections */}
+                {isExpanded && (
+                  <div className="border-t border-border px-4 py-4 space-y-4">
+                    {!script ? (
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-text-muted">No script yet</span>
+                        <Button
+                          size="sm"
+                          onClick={() => regenerateScript(ep.episode_id)}
+                          disabled={regenerating === ep.episode_id}
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="min-w-0 flex-1">
-                              <div className="text-sm font-medium text-text-primary">
-                                {ep.working_title || ep.title}
-                              </div>
-                              <div className="text-xs text-text-muted mt-0.5 flex items-center gap-2">
-                                <span>{ep.pillar}</span>
-                                {ep.core_thesis && (
-                                  <span className="truncate max-w-[300px]">
-                                    · {ep.core_thesis}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <StateBadge state={ep.state} />
-                              {script && (
-                                <span className="text-[10px] text-text-muted">v{script.version}</span>
-                              )}
-                              <span className="text-text-muted text-xs">{isExpanded ? '▾' : '▸'}</span>
-                            </div>
-                          </div>
+                          {regenerating === ep.episode_id ? 'Generating...' : 'Generate Script'}
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Script title */}
+                        <div className="text-sm font-medium text-accent-gold">
+                          {script.title_candidate}
                         </div>
 
-                        {/* Expanded: Script sections */}
-                        {isExpanded && (
-                          <div className="border-t border-border px-4 py-4 space-y-4">
-                            {!script ? (
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs text-text-muted">No script yet</span>
-                                <Button
-                                  size="sm"
-                                  onClick={() => regenerateScript(ep.episode_id)}
-                                  disabled={regenerating === ep.episode_id}
-                                >
-                                  {regenerating === ep.episode_id ? 'Generating...' : 'Generate Script'}
-                                </Button>
-                              </div>
-                            ) : (
-                              <>
-                                {/* Script title */}
-                                <div className="text-sm font-medium text-accent-gold">
-                                  {script.title_candidate}
+                        {/* Julian Loop sections */}
+                        {(['artifact', 'labyrinth', 'twist', 'echo'] as const).map(section => {
+                          const sectionLabel = section.charAt(0).toUpperCase() + section.slice(1);
+                          const text = script[section] || '';
+                          const isEditingThis = editingSection?.episodeId === ep.episode_id && editingSection?.section === section;
+                          const isRewritingThis = rewriting?.episodeId === ep.episode_id && rewriting?.section === section;
+
+                          return (
+                            <div key={section}>
+                              <div className="flex items-center justify-between mb-1">
+                                <div>
+                                  <span className="text-[10px] text-text-muted uppercase tracking-wider">
+                                    {sectionLabel}
+                                  </span>
+                                  <span className="text-[10px] text-text-muted/50 ml-2 normal-case tracking-normal">
+                                    {SECTION_SUBTITLES[section]}
+                                  </span>
                                 </div>
-
-                                {/* Julian Loop sections */}
-                                {(['artifact', 'labyrinth', 'twist', 'echo'] as const).map(section => {
-                                  const sectionLabel = section.charAt(0).toUpperCase() + section.slice(1);
-                                  const text = script[section] || '';
-                                  const isEditingThis = editingSection?.episodeId === ep.episode_id && editingSection?.section === section;
-                                  const isRewritingThis = rewriting?.episodeId === ep.episode_id && rewriting?.section === section;
-
-                                  return (
-                                    <div key={section} className="group">
-                                      <div className="flex items-center justify-between mb-1">
-                                        <span className="text-[10px] text-text-muted uppercase tracking-wider">
-                                          {sectionLabel}
-                                        </span>
-                                        {!isEditingThis && (
-                                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                            <button
-                                              onClick={() => startEdit(ep.episode_id, section, text)}
-                                              className="text-[10px] text-text-muted hover:text-text-primary px-1.5 py-0.5 rounded bg-bg-tertiary"
-                                            >
-                                              Edit
-                                            </button>
-                                            <button
-                                              onClick={() => rewriteSection(ep.episode_id, section)}
-                                              disabled={isRewritingThis}
-                                              className="text-[10px] text-accent-gold-dim hover:text-accent-gold px-1.5 py-0.5 rounded bg-bg-tertiary disabled:opacity-50"
-                                            >
-                                              {isRewritingThis ? '...' : 'AI Rewrite'}
-                                            </button>
-                                          </div>
-                                        )}
-                                      </div>
-                                      {isEditingThis ? (
-                                        <div className="space-y-2">
-                                          <textarea
-                                            value={editText}
-                                            onChange={e => setEditText(e.target.value)}
-                                            rows={4}
-                                            className="w-full bg-bg-primary border border-accent-gold-dim rounded px-3 py-2 text-xs text-text-secondary focus:outline-none resize-none"
-                                          />
-                                          <div className="flex gap-2 justify-end">
-                                            <button
-                                              onClick={() => { setEditingSection(null); setEditText(''); }}
-                                              className="text-[10px] text-text-muted hover:text-text-primary px-2 py-1 rounded bg-bg-tertiary"
-                                            >
-                                              Cancel
-                                            </button>
-                                            <button
-                                              onClick={saveSection}
-                                              disabled={savingEdit}
-                                              className="text-[10px] text-bg-primary bg-accent-gold hover:bg-accent-gold/90 px-2 py-1 rounded disabled:opacity-50"
-                                            >
-                                              {savingEdit ? 'Saving...' : 'Save'}
-                                            </button>
-                                          </div>
-                                        </div>
-                                      ) : (
-                                        <div className="text-xs text-text-secondary whitespace-pre-wrap leading-relaxed">
-                                          {text || <span className="text-text-muted italic">Empty</span>}
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-
-                                {/* Action bar */}
-                                <div className="flex items-center justify-between pt-2 border-t border-border-subtle">
-                                  <div className="flex gap-2">
-                                    <StateBadge state={script.approval_state} />
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => regenerateScript(ep.episode_id)}
-                                      disabled={regenerating === ep.episode_id}
+                                {!isEditingThis && (
+                                  <div className="flex gap-1 opacity-60 hover:opacity-100 transition-opacity">
+                                    <button
+                                      onClick={() => startEdit(ep.episode_id, section, text)}
+                                      className="text-[10px] text-text-muted hover:text-text-primary px-1.5 py-0.5 rounded bg-bg-tertiary"
                                     >
-                                      {regenerating === ep.episode_id ? 'Generating...' : 'Regenerate'}
-                                    </Button>
-                                    {script.approval_state !== 'Approved' && (
-                                      <Button
-                                        size="sm"
-                                        onClick={async () => {
-                                          await fetch(`/api/scripts/${script.script_id}`, {
-                                            method: 'PATCH',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ action: 'approve' }),
-                                          });
-                                          load();
-                                        }}
-                                      >
-                                        Approve
-                                      </Button>
-                                    )}
+                                      Edit
+                                    </button>
+                                    <button
+                                      onClick={() => rewriteSection(ep.episode_id, section)}
+                                      disabled={isRewritingThis}
+                                      className="text-[10px] text-accent-gold-dim hover:text-accent-gold px-1.5 py-0.5 rounded bg-bg-tertiary disabled:opacity-50"
+                                    >
+                                      {isRewritingThis ? '...' : 'AI Rewrite'}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                              {isEditingThis ? (
+                                <div className="space-y-2">
+                                  <textarea
+                                    value={editText}
+                                    onChange={e => setEditText(e.target.value)}
+                                    rows={4}
+                                    className="w-full bg-bg-primary border border-accent-gold-dim rounded px-3 py-2 text-xs text-text-secondary focus:outline-none resize-none"
+                                  />
+                                  <div className="flex gap-2 justify-end">
+                                    <button
+                                      onClick={() => { setEditingSection(null); setEditText(''); }}
+                                      className="text-[10px] text-text-muted hover:text-text-primary px-2 py-1 rounded bg-bg-tertiary"
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      onClick={saveSection}
+                                      disabled={savingEdit}
+                                      className="text-[10px] text-bg-primary bg-accent-gold hover:bg-accent-gold/90 px-2 py-1 rounded disabled:opacity-50"
+                                    >
+                                      {savingEdit ? 'Saving...' : 'Save'}
+                                    </button>
                                   </div>
                                 </div>
-                              </>
+                              ) : (
+                                <div className="text-xs text-text-secondary whitespace-pre-wrap leading-relaxed">
+                                  {text || <span className="text-text-muted italic">Empty</span>}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        {/* Action bar */}
+                        <div className="flex items-center justify-between pt-2 border-t border-border-subtle">
+                          <div className="flex gap-2">
+                            <StateBadge state={script.approval_state} />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => regenerateScript(ep.episode_id)}
+                              disabled={regenerating === ep.episode_id}
+                            >
+                              {regenerating === ep.episode_id ? 'Generating...' : 'Regenerate'}
+                            </Button>
+                            {script.approval_state !== 'Approved' && (
+                              <Button
+                                size="sm"
+                                onClick={async () => {
+                                  await fetch(`/api/scripts/${script.script_id}`, {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ action: 'approve' }),
+                                  });
+                                  load();
+                                }}
+                              >
+                                Approve
+                              </Button>
                             )}
                           </div>
-                        )}
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </Card>
             );
           })}
         </div>

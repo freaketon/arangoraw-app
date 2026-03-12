@@ -8,6 +8,25 @@ import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import { useAIGenerate } from '@/hooks/useAIGenerate';
 
+// SVG icons
+function MicIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+      <line x1="12" x2="12" y1="19" y2="22" />
+    </svg>
+  );
+}
+
+function StopIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+    </svg>
+  );
+}
+
 export default function StoriesPage() {
   const [stories, setStories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +74,7 @@ export default function StoriesPage() {
         await transcribeAudio(blob);
       };
 
-      mediaRecorder.start(1000); // collect in 1s chunks
+      mediaRecorder.start(1000);
       mediaRecorderRef.current = mediaRecorder;
       setRecording(true);
       setRecordingTime(0);
@@ -90,7 +109,7 @@ export default function StoriesPage() {
     setTranscribing(false);
   }
 
-  // ── Save story via AI extract ──
+  // ── Save story via AI extract (primary action) ──
   async function extractAndSave() {
     const text = rawInput.trim();
     if (!text) return;
@@ -102,7 +121,7 @@ export default function StoriesPage() {
     }
   }
 
-  // ── Quick manual save ──
+  // ── Quick manual save (secondary) ──
   async function quickSave() {
     const text = rawInput.trim();
     if (!text) return;
@@ -122,7 +141,25 @@ export default function StoriesPage() {
     return `${m}:${sec.toString().padStart(2, '0')}`;
   }
 
-  if (loading) return <div className="text-text-muted text-sm text-center py-12">Loading...</div>;
+  // Loading skeleton
+  if (loading) {
+    return (
+      <div className="space-y-6 max-w-2xl">
+        <div className="bg-bg-secondary border border-border rounded-lg p-4 space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-bg-tertiary animate-pulse" />
+            <div className="flex-1 h-16 bg-bg-tertiary rounded animate-pulse" />
+          </div>
+        </div>
+        {[1, 2].map(i => (
+          <div key={i} className="bg-bg-secondary border border-border rounded-lg p-4 space-y-2">
+            <div className="h-4 w-48 bg-bg-tertiary rounded animate-pulse" />
+            <div className="h-3 w-full bg-bg-tertiary rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -130,7 +167,7 @@ export default function StoriesPage() {
       <Card>
         <CardBody className="space-y-3">
           <div className="flex items-center gap-3">
-            {/* Mic button */}
+            {/* Mic button — SVG icons */}
             <button
               onClick={recording ? stopRecording : startRecording}
               disabled={transcribing}
@@ -140,7 +177,7 @@ export default function StoriesPage() {
                   : 'bg-bg-tertiary text-text-muted hover:text-accent-gold hover:bg-bg-hover border border-border'
               } disabled:opacity-50`}
             >
-              {recording ? '■' : '\uD83C\uDFA4'}
+              {recording ? <StopIcon /> : <MicIcon />}
             </button>
 
             {recording ? (
@@ -157,7 +194,7 @@ export default function StoriesPage() {
               <textarea
                 value={rawInput}
                 onChange={e => setRawInput(e.target.value)}
-                rows={2}
+                rows={4}
                 placeholder="Record a memory or type it here..."
                 className="flex-1 bg-bg-primary border border-border rounded px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-gold-dim resize-none"
               />
@@ -168,17 +205,21 @@ export default function StoriesPage() {
             <div className="text-[10px] text-text-muted">Transcribed from audio — edit above if needed</div>
           )}
 
+          {/* Single primary save button + subtle secondary option */}
           {rawInput.trim() && !recording && !transcribing && (
-            <div className="flex gap-2 justify-end">
-              <Button size="sm" variant="ghost" onClick={quickSave}>
-                Save Raw
-              </Button>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={quickSave}
+                className="text-xs text-text-muted hover:text-text-secondary underline underline-offset-2"
+              >
+                Save without AI
+              </button>
               <Button
                 size="sm"
                 onClick={extractAndSave}
                 disabled={generating === 'extract_story'}
               >
-                {generating === 'extract_story' ? 'Extracting...' : 'AI Extract & Save'}
+                {generating === 'extract_story' ? 'Saving...' : 'Save'}
               </Button>
             </div>
           )}
@@ -188,7 +229,7 @@ export default function StoriesPage() {
       {/* Story List */}
       {stories.length === 0 ? (
         <EmptyState
-          icon="◈"
+          icon={<svg className="w-8 h-8 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456Z" /></svg>}
           title="No stories yet"
           description="Record a memory or type one above. AI will extract themes, emotions, and classify it."
         />

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getScript, updateScript, approveScript, rejectScript } from '@/lib/db';
+import { getScript, updateScript, approveScript, rejectScript, transitionEpisode } from '@/lib/db';
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -12,7 +12,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const { id } = await params;
   const body = await request.json();
 
-  if (body.action === 'approve') return NextResponse.json(approveScript(id));
+  if (body.action === 'approve') {
+    const script = approveScript(id);
+    if (script) {
+      try { transitionEpisode(script.episode_id, 'Script Reviewed'); } catch {}
+      try { transitionEpisode(script.episode_id, 'Script Approved'); } catch {}
+    }
+    return NextResponse.json(script);
+  }
   if (body.action === 'reject') return NextResponse.json(rejectScript(id));
 
   const updated = updateScript(id, body);

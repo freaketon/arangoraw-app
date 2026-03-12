@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   generateScript,
+  rewriteScriptSection,
   generateMetadata,
   generateThumbnail,
   generateShorts,
@@ -14,11 +15,13 @@ import {
   getEpisode,
   getStory,
   getReference,
+  getScript,
   getLatestScript,
   listEpisodes,
   listStories,
   getCurrentWeek,
   createScript,
+  updateScript,
   createMetadataPack,
   createThumbnailPack,
   createShortsPack,
@@ -56,10 +59,12 @@ const ACTION_AGENT_MAP: Record<GenerateAction, AgentName> = {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { action, episode_id, raw_input } = body as {
+    const { action, episode_id, raw_input, rewrite_section, script_id } = body as {
       action: GenerateAction;
       episode_id?: string;
       raw_input?: string;
+      rewrite_section?: 'artifact' | 'labyrinth' | 'twist' | 'echo';
+      script_id?: string;
     };
 
     if (!action || !ACTION_AGENT_MAP[action]) {
@@ -78,6 +83,43 @@ export async function POST(request: NextRequest) {
           if (!episode) return NextResponse.json({ error: 'Episode not found' }, { status: 404 });
           const story = episode.primary_story_id ? getStory(episode.primary_story_id) : null;
           const research = episode.primary_reference_id ? getReference(episode.primary_reference_id) : null;
+
+          // Targeted section rewrite (Observation 1 fix)
+          if (rewrite_section && script_id) {
+            const existing = getScript(script_id);
+            if (!existing) return NextResponse.json({ error: 'Script not found' }, { status: 404 });
+
+            const newText = await rewriteScriptSection(
+              rewrite_section,
+              {
+                artifact: existing.artifact,
+                labyrinth: existing.labyrinth,
+                twist: existing.twist,
+                echo: existing.echo,
+                title_candidate: existing.title_candidate,
+                core_thesis: existing.core_thesis,
+              },
+              episode,
+              story,
+              research,
+            );
+
+            // Rebuild full_script with the rewritten section
+            const sections = { ...existing, [rewrite_section]: newText };
+            const fullScript = [sections.artifact, sections.labyrinth, sections.twist, sections.echo]
+              .filter(Boolean)
+              .join('\n\n');
+
+            const updated = updateScript(script_id, {
+              [rewrite_section]: newText,
+              full_script: fullScript,
+            });
+
+            result = { script: updated, rewritten_section: rewrite_section };
+            break;
+          }
+
+          // Full script generation (original behavior)
           const generated = await generateScript(episode, story, research);
 
           // Save script to DB (version and approval_state are auto-set internally)

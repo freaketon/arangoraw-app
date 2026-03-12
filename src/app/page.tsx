@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import Card, { CardHeader, CardBody } from '@/components/ui/Card';
 import { StateBadge } from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -58,12 +58,25 @@ const STATE_BORDER_COLORS: Record<string, string> = {
 export default function ThisWeekPage() {
   const [week, setWeek] = useState<any | null>(null);
   const [episodes, setEpisodes] = useState<any[]>([]);
-  const [scripts, setScripts] = useState<Record<string, ScriptData>>({});
+  const [allScripts, setAllScripts] = useState<Record<string, ScriptData[]>>({});
+  const [selectedVersion, setSelectedVersion] = useState<Record<string, number>>({});
+  const [versionDropdown, setVersionDropdown] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [expandedEpisode, setExpandedEpisode] = useState<string | null>(null);
   const [editingSection, setEditingSection] = useState<{ episodeId: string; section: string } | null>(null);
   const [editText, setEditText] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Derive current scripts from allScripts + selectedVersion
+  const scripts: Record<string, ScriptData> = useMemo(() => {
+    const map: Record<string, ScriptData> = {};
+    for (const [epId, versions] of Object.entries(allScripts)) {
+      const idx = selectedVersion[epId] ?? 0;
+      if (versions[idx]) map[epId] = versions[idx];
+    }
+    return map;
+  }, [allScripts, selectedVersion]);
 
   // AI Plan state
   const [planning, setPlanning] = useState(false);
@@ -75,6 +88,17 @@ export default function ThisWeekPage() {
 
   // Confirm dialog
   const [showPlanConfirm, setShowPlanConfirm] = useState(false);
+
+  // Close version dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setVersionDropdown(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -96,8 +120,8 @@ export default function ThisWeekPage() {
         : [];
       setEpisodes(weekEps);
 
-      // Load scripts for each episode
-      const scriptMap: Record<string, ScriptData> = {};
+      // Load ALL script versions for each episode
+      const scriptMap: Record<string, ScriptData[]> = {};
       await Promise.all(
         weekEps.map(async (ep: any) => {
           try {
@@ -105,12 +129,12 @@ export default function ThisWeekPage() {
             if (sRes.ok) {
               const sData = await sRes.json();
               const arr = Array.isArray(sData) ? sData : [];
-              if (arr.length > 0) scriptMap[ep.episode_id] = arr[0];
+              if (arr.length > 0) scriptMap[ep.episode_id] = arr;
             }
           } catch {}
         })
       );
-      setScripts(scriptMap);
+      setAllScripts(scriptMap);
     } catch {
       setWeek(null);
       setEpisodes([]);
@@ -230,6 +254,7 @@ export default function ThisWeekPage() {
           action: 'generate_script',
           episode_id: episodeId,
           rewrite_section: section,
+          script_id: script.script_id,
         }),
       });
       if (res.ok) load();
@@ -340,6 +365,7 @@ export default function ThisWeekPage() {
         <div className="space-y-2">
           {flatEpisodes.map(ep => {
             const script = scripts[ep.episode_id];
+            const versions = allScripts[ep.episode_id] || [];
             const isExpanded = expandedEpisode === ep.episode_id;
             const borderColor = STATE_BORDER_COLORS[ep.state] || 'border-l-zinc-600';
             return (
@@ -366,8 +392,45 @@ export default function ThisWeekPage() {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <StateBadge state={ep.state} />
-                      {script && (
-                        <span className="text-[10px] text-text-muted">v{script.version}</span>
+                      {/* Version dropdown */}
+                      {script && versions.length > 0 && (
+                        <div className="relative" ref={versionDropdown === ep.episode_id ? dropdownRef : undefined}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setVersionDropdown(versionDropdown === ep.episode_id ? null : ep.episode_id);
+                            }}
+                            className="text-[10px] text-text-muted hover:text-accent-gold transition-colors px-1.5 py-0.5 rounded bg-bg-tertiary"
+                          >
+                            v{script.version} {versions.length > 1 ? '\u25be' : ''}
+                          </button>
+                          {versionDropdown === ep.episode_id && versions.length > 1 && (
+                            <div className="absolute right-0 top-full mt-1 z-40 bg-bg-secondary border border-border rounded-md shadow-lg py-1 min-w-[140px]">
+                              {versions.map((v, idx) => (
+                                <button
+                                  key={v.script_id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedVersion(prev => ({ ...prev, [ep.episode_id]: idx }));
+                                    setVersionDropdown(null);
+                                  }}
+                                  className={`w-full text-left px-3 py-1.5 text-[11px] flex items-center justify-between hover:bg-bg-hover transition-colors ${
+                                    (selectedVersion[ep.episode_id] ?? 0) === idx ? 'text-accent-gold' : 'text-text-muted'
+                                  }`}
+                                >
+                                  <span>v{v.version}</span>
+                                  <span className={`text-[9px] px-1.5 py-0.5 rounded ${
+                                    v.approval_state === 'Approved' ? 'bg-green-500/10 text-green-400' :
+                                    v.approval_state === 'Rejected' ? 'bg-red-500/10 text-red-400' :
+                                    'bg-zinc-500/10 text-text-muted'
+                                  }`}>
+                                    {v.approval_state}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       )}
                       <span className="text-text-muted text-xs">{isExpanded ? '\u25be' : '\u25b8'}</span>
                     </div>

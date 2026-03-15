@@ -32,6 +32,7 @@ import {
   transitionEpisode,
 } from '@/lib/db';
 import type { AgentName } from '@/lib/ai';
+import type { BiographyStory } from '@/lib/ai/biography';
 
 type GenerateAction =
   | 'generate_script'
@@ -55,6 +56,18 @@ const ACTION_AGENT_MAP: Record<GenerateAction, AgentName> = {
   generate_weekly_strategy: 'Strategy Director',
   assess_studio: 'Studio Manager',
 };
+
+/** Convert DB stories to biography context format */
+function toBiographyStories(stories: any[]): BiographyStory[] {
+  return stories.map(s => ({
+    title: s.title,
+    era: s.era,
+    narrative: s.narrative || s.hook || '',
+    hook: s.hook,
+    pillar: s.pillar,
+    tags: s.tags,
+  }));
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -84,6 +97,10 @@ export async function POST(request: NextRequest) {
           const story = episode.primary_story_id ? getStory(episode.primary_story_id) : null;
           const research = episode.primary_reference_id ? getReference(episode.primary_reference_id) : null;
 
+          // Load all stories for biography context
+          const allDbStories = listStories();
+          const allBioStories = toBiographyStories(allDbStories);
+
           // Targeted section rewrite (Observation 1 fix)
           if (rewrite_section && script_id) {
             const existing = getScript(script_id);
@@ -102,6 +119,7 @@ export async function POST(request: NextRequest) {
               episode,
               story,
               research,
+              allBioStories,
             );
 
             // Rebuild full_script with the rewritten section
@@ -119,10 +137,10 @@ export async function POST(request: NextRequest) {
             break;
           }
 
-          // Full script generation (original behavior)
-          const generated = await generateScript(episode, story, research);
+          // Full script generation with biography context
+          const generated = await generateScript(episode, story, research, allBioStories);
 
-          // Save script to DB (version and approval_state are auto-set internally)
+          // Save script to DB
           const script = createScript({
             episode_id,
             title_candidate: generated.title_candidate,
@@ -190,7 +208,7 @@ export async function POST(request: NextRequest) {
           const episode = getEpisode(episode_id);
           if (!episode) return NextResponse.json({ error: 'Episode not found' }, { status: 404 });
           const script = getLatestScript(episode_id);
-          if (!script) return NextResponse.json({ error: 'No script found — generate a script first' }, { status: 400 });
+          if (!script) return NextResponse.json({ error: 'No script found -- generate a script first' }, { status: 400 });
           const generated = await generateShorts(episode, script);
 
           const pack = createShortsPack({
@@ -214,7 +232,6 @@ export async function POST(request: NextRequest) {
           if (!raw_input) return NextResponse.json({ error: 'raw_input required' }, { status: 400 });
           const generated = await extractStory(raw_input);
 
-          // Map AI output to Story interface fields
           const story = createStory({
             title: generated.title,
             hook: generated.emotional_truth || generated.raw_event_summary || '',
@@ -237,7 +254,6 @@ export async function POST(request: NextRequest) {
           const story = episode.primary_story_id ? getStory(episode.primary_story_id) : null;
           const suggestions = await suggestResearch(episode, story);
 
-          // Save each suggestion (approved_status is set internally to false)
           const references = suggestions.map((s: Record<string, unknown>) =>
             createReference({
               title: s.title as string,
@@ -297,7 +313,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Log execution as success (single log, no spread)
+      // Log execution
       logExecution({
         agent_name: agentName,
         prompt_version: 'v1',
@@ -312,7 +328,6 @@ export async function POST(request: NextRequest) {
     } catch (aiError: unknown) {
       const errorMessage = aiError instanceof Error ? aiError.message : 'Unknown error';
 
-      // Log execution as failed (single log, no spread)
       logExecution({
         agent_name: agentName,
         prompt_version: 'v1',

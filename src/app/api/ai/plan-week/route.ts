@@ -2,18 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   generateWeeklyStrategy,
   generateScript,
+  generateReelsScript,
 } from '@/lib/ai';
 import {
   createEpisode,
   createWeeklyCycle,
   addEpisodeToWeek,
   createScript,
+  createShortsPack,
   listStories,
   listEpisodes,
   logExecution,
   transitionEpisode,
 } from '@/lib/db';
 import type { Pillar } from '@/lib/types';
+import type { BiographyStory } from '@/lib/ai/biography';
 
 const VALID_PILLARS: Pillar[] = [
   'Psychology of Chaos',
@@ -27,6 +30,56 @@ const VALID_PILLARS: Pillar[] = [
 function toPillar(raw: string): Pillar {
   const match = VALID_PILLARS.find(p => p.toLowerCase() === raw.toLowerCase());
   return match || 'Psychology of Chaos';
+}
+
+/** Match a story to an episode by pillar keyword overlap */
+function findStoryForPillar(
+  pillar: string,
+  stories: any[],
+  usedIds: Set<string>,
+): any | null {
+  const pillarLower = pillar.toLowerCase();
+  for (const s of stories) {
+    if (usedIds.has(s.id)) continue;
+    const sPillar = (s.pillar || '').toLowerCase();
+    const sTags = (s.tags || []).join(' ').toLowerCase();
+    const sTitle = (s.title || '').toLowerCase();
+    if (
+      sPillar === pillarLower ||
+      sPillar.includes(pillarLower.split(' ')[0]) ||
+      pillarLower.includes(sPillar.split(' ')[0]) ||
+      sTitle.includes(pillarLower.split(' ')[0]) ||
+      sTags.includes(pillarLower.split(' ')[0])
+    ) {
+      return s;
+    }
+  }
+  return null;
+}
+
+/** Convert DB story to StoryRecord-like shape for generators */
+function toStoryRecord(s: any): any {
+  return {
+    title: s.title,
+    era: s.era,
+    raw_event_summary: s.narrative || s.hook || '',
+    sensory_details: '',
+    emotional_truth: s.hook || '',
+    philosophical_lesson: '',
+    related_pillars: s.pillar ? [s.pillar] : [],
+  };
+}
+
+/** Convert DB stories to biography context format */
+function toBiographyStories(stories: any[]): BiographyStory[] {
+  return stories.map(s => ({
+    title: s.title,
+    era: s.era,
+    narrative: s.narrative || s.hook || '',
+    hook: s.hook,
+    pillar: s.pillar,
+    tags: s.tags,
+  }));
 }
 
 export async function POST(request: NextRequest) {
@@ -107,23 +160,42 @@ export async function POST(request: NextRequest) {
 
         send({ step: 'week', status: 'done', week_id: week.week_id });
 
-        // Step 4: Generate scripts for each episode
-        const scripts: Array<{ episode_id: string; title: string; status: string }> = [];
+        // Prepare story context for all generators
+        const allBioStories = toBiographyStories(stories);
+        const usedStoryIds = new Set<string>();
+
+        // Step 4: Generate scripts + reels for each episode
+        const scriptResults: Array<{ episode_id: string; title: string; status: string; reels_count: number }> = [];
 
         for (let i = 0; i < createdEpisodes.length; i++) {
           const ep = createdEpisodes[i];
+
+          // Auto-match a story by pillar
+          const matchedDbStory = findStoryForPillar(ep.pillar, stories, usedStoryIds);
+          if (matchedDbStory) usedStoryIds.add(matchedDbStory.id);
+          const matchedStoryRecord = matchedDbStory ? toStoryRecord(matchedDbStory) : null;
+
           send({
             step: 'script',
             status: 'generating',
-            message: `Generating script ${i + 1}/${createdEpisodes.length}: ${ep.working_title}`,
+            message: `Generating script ${i + 1}/${createdEpisodes.length}: ${ep.working_title}${matchedDbStory ? ` (story: "${matchedDbStory.title}")` : ' (no story matched)'}`,
             index: i,
           });
 
           try {
-            const fullEpisode = { episode_id: ep.episode_id, working_title: ep.working_title, pillar: ep.pillar, core_thesis: '', mental_model: '', state: 'Idea' as const } as any;
-            const generated = await generateScript(fullEpisode, null, null);
+            const fullEpisode = {
+              episode_id: ep.episode_id,
+              working_title: ep.working_title,
+              pillar: ep.pillar,
+              core_thesis: '',
+              mental_model: '',
+              state: 'Idea' as const,
+            } as any;
 
-            createScript({
+            // Generate YouTube script with story context + biography
+            const generated = await generateScript(fullEpisode, matchedStoryRecord, null, allBioStories);
+
+            const script = createScript({
               episode_id: ep.episode_id,
               title_candidate: generated.title_candidate,
               core_thesis: generated.core_thesis,
@@ -136,7 +208,7 @@ export async function POST(request: NextRequest) {
               created_by_agent: 'Script Architect',
             });
 
-            // Walk the state machine: Idea → Selected → Story Matched → Research Matched → Script Drafted
+            // Walk the state machine
             try {
               transitionEpisode(ep.episode_id, 'Selected');
               transitionEpisode(ep.episode_id, 'Story Matched');
@@ -154,11 +226,57 @@ export async function POST(request: NextRequest) {
               retry_count: 0,
             });
 
-            scripts.push({ episode_id: ep.episode_id, title: generated.title_candidate, status: 'done' });
             send({ step: 'script', status: 'done', index: i, title: generated.title_candidate });
+
+            // Generate Instagram Reels for this episode
+            let reelsCount = 0;
+            try {
+              send({
+                step: 'reels',
+                status: 'generating',
+                message: `Generating Reels for: ${generated.title_candidate}`,
+                index: i,
+              });
+
+              const reelsPack = await generateReelsScript(fullEpisode, generated, matchedStoryRecord, allBioStories);
+              reelsCount = reelsPack.reels?.length || 0;
+
+              // Save reels as a shorts pack
+              if (reelsCount > 0) {
+                createShortsPack({
+                  episode_id: ep.episode_id,
+                  clips: reelsPack.reels.map((r, idx) => ({
+                    clip_id: `reel-${idx + 1}`,
+                    hook: r.hook,
+                    script: r.script,
+                    platform: 'Instagram' as const,
+                  })),
+                  captions: reelsPack.reels.map(r => r.caption),
+                  platform_recommendations: [],
+                  status: 'Draft',
+                });
+              }
+
+              logExecution({
+                agent_name: 'Reelsmith',
+                prompt_version: 'v1',
+                input_payload: { action: 'plan_week_reels', episode_id: ep.episode_id },
+                output_payload: { reel_count: reelsCount } as Record<string, unknown>,
+                status: 'Success',
+                episode_id: ep.episode_id,
+                retry_count: 0,
+              });
+
+              send({ step: 'reels', status: 'done', index: i, count: reelsCount });
+            } catch (reelErr) {
+              const msg = reelErr instanceof Error ? reelErr.message : 'Reels generation failed';
+              send({ step: 'reels', status: 'failed', index: i, error: msg });
+            }
+
+            scriptResults.push({ episode_id: ep.episode_id, title: generated.title_candidate, status: 'done', reels_count: reelsCount });
           } catch (err) {
             const msg = err instanceof Error ? err.message : 'Script generation failed';
-            scripts.push({ episode_id: ep.episode_id, title: ep.working_title, status: 'failed' });
+            scriptResults.push({ episode_id: ep.episode_id, title: ep.working_title, status: 'failed', reels_count: 0 });
             send({ step: 'script', status: 'failed', index: i, error: msg });
           }
         }
@@ -171,12 +289,14 @@ export async function POST(request: NextRequest) {
             week_id: week.week_id,
             week_theme: strategy.week_theme,
             episodes_created: createdEpisodes.length,
-            scripts_generated: scripts.filter(s => s.status === 'done').length,
-            scripts_failed: scripts.filter(s => s.status === 'failed').length,
+            scripts_generated: scriptResults.filter(s => s.status === 'done').length,
+            scripts_failed: scriptResults.filter(s => s.status === 'failed').length,
+            total_reels: scriptResults.reduce((sum, s) => sum + s.reels_count, 0),
             episodes: createdEpisodes.map((ep, i) => ({
               ...ep,
-              script_status: scripts[i]?.status || 'pending',
-              script_title: scripts[i]?.title || null,
+              script_status: scriptResults[i]?.status || 'pending',
+              script_title: scriptResults[i]?.title || null,
+              reels_count: scriptResults[i]?.reels_count || 0,
             })),
           },
         });

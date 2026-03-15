@@ -1,5 +1,6 @@
 import { generateJSON } from './client';
 import { SYSTEM_PROMPTS, AgentName } from './prompts';
+import { getFullContext, type BiographyStory } from './biography';
 import type {
   Episode,
   StoryRecord,
@@ -12,13 +13,13 @@ import type {
   WeeklyCycle,
 } from '@/lib/types';
 
-// ─── Helpers ───
+// --- Helpers ---
 
 function agentPrompt(agent: AgentName, task: string) {
   return { systemPrompt: SYSTEM_PROMPTS[agent], taskPrompt: task };
 }
 
-// ─── Script Generation ───
+// --- Script Generation ---
 
 export interface GeneratedScript {
   title_candidate: string;
@@ -35,37 +36,42 @@ export async function generateScript(
   episode: Episode,
   story?: StoryRecord | null,
   research?: ResearchReference | null,
+  allStories?: BiographyStory[] | null,
 ): Promise<GeneratedScript> {
+  const biographyContext = getFullContext(allStories || []);
+
   const task = `Generate a full script for this episode using the Julian Loop structure.
+
+${biographyContext}
 
 EPISODE:
 - Title: ${episode.working_title}
 - Pillar: ${episode.pillar}
-- Core Thesis: ${episode.core_thesis || 'Not yet defined — you define it'}
+- Core Thesis: ${episode.core_thesis || 'Not yet defined -- you define it'}
 - Mental Model: ${episode.mental_model || 'None specified'}
 - Angle: ${episode.angle || 'None specified'}
 
-${story ? `PERSONAL STORY:
+${story ? `PERSONAL STORY (use this faithfully -- do not embellish with invented details):
 - Title: ${story.title}
 - Era: ${story.era}
 - Raw Event: ${story.raw_event_summary}
 - Sensory Details: ${story.sensory_details}
 - Emotional Truth: ${story.emotional_truth}
-- Philosophical Lesson: ${story.philosophical_lesson}` : 'No story attached — create a compelling narrative arc using the thesis alone.'}
+- Philosophical Lesson: ${story.philosophical_lesson}` : 'NO PERSONAL STORY ATTACHED.\nBuild the script around the thesis, research, and universal truths.\nDo NOT invent personal anecdotes about Alejandro.'}
 
 ${research ? `RESEARCH REFERENCE:
 - Title: ${research.title}
 - Domain: ${research.domain}
 - Core Summary: ${research.core_summary}
 - Primary Lesson: ${research.primary_lesson}
-- Why It Fits: ${research.why_it_fits}` : 'No research attached — draw from your knowledge to support the thesis.'}
+- Why It Fits: ${research.why_it_fits}` : 'No research attached -- draw from your knowledge to support the thesis.'}
 
 Return JSON with: title_candidate, core_thesis, artifact, labyrinth, twist, echo, full_script (complete script combining all 4 parts with natural transitions), highlight_lines (array of 3-5 most powerful lines from the script).`;
 
   return generateJSON<GeneratedScript>({ ...agentPrompt('Script Architect', task), maxTokens: 8192 });
 }
 
-// ─── Section Rewrite ───
+// --- Section Rewrite ---
 
 export async function rewriteScriptSection(
   section: 'artifact' | 'labyrinth' | 'twist' | 'echo',
@@ -73,7 +79,10 @@ export async function rewriteScriptSection(
   episode: Episode,
   story?: StoryRecord | null,
   research?: ResearchReference | null,
+  allStories?: BiographyStory[] | null,
 ): Promise<string> {
+  const biographyContext = getFullContext(allStories || []);
+
   const sectionLabels: Record<string, string> = {
     artifact: 'ARTIFACT (The opening hook)',
     labyrinth: 'LABYRINTH (The deep exploration)',
@@ -87,6 +96,8 @@ export async function rewriteScriptSection(
     .join('\n\n');
 
   const task = `Rewrite ONLY the ${sectionLabels[section]} section of this script. Keep the same voice, thesis, and narrative thread but make it stronger, sharper, and more compelling.
+
+${biographyContext}
 
 EPISODE:
 - Title: ${episode.working_title}
@@ -109,7 +120,54 @@ Return JSON with a single key "${section}" containing the rewritten text.`;
   return result[section] || '';
 }
 
-// ─── Metadata Generation ───
+// --- Reels Script Generation ---
+
+export interface GeneratedReel {
+  hook: string;
+  script: string;
+  caption: string;
+  hashtags: string[];
+}
+
+export interface GeneratedReelsPack {
+  reels: GeneratedReel[];
+}
+
+export async function generateReelsScript(
+  episode: Episode,
+  fullScript: GeneratedScript,
+  story?: StoryRecord | null,
+  allStories?: BiographyStory[] | null,
+): Promise<GeneratedReelsPack> {
+  const biographyContext = getFullContext(allStories || []);
+
+  const task = `Create 2-3 standalone Instagram Reels scripts (30-60 seconds each) inspired by this episode.
+
+${biographyContext}
+
+EPISODE:
+- Title: ${episode.working_title}
+- Pillar: ${episode.pillar}
+- Core Thesis: ${fullScript.core_thesis}
+
+FULL SCRIPT (for inspiration -- do NOT just extract clips):
+${fullScript.full_script.slice(0, 2000)}
+
+${story ? `PERSONAL STORY:\n- Title: ${story.title}\n- Emotional Truth: ${story.emotional_truth}` : 'No personal story -- build each Reel around a universal truth from the episode theme. Do NOT invent personal anecdotes.'}
+
+Each Reel must be:
+- STANDALONE and self-contained (not a clip from the YouTube script)
+- 30-60 seconds when read aloud
+- Opening with a hook that stops scroll
+- Focused on ONE core insight
+- Written in Alejandro's raw, philosophical voice
+
+Return JSON with: reels (array of objects with: hook, script, caption, hashtags).`;
+
+  return generateJSON<GeneratedReelsPack>({ ...agentPrompt('Reelsmith', task), maxTokens: 4096 });
+}
+
+// --- Metadata Generation ---
 
 export interface GeneratedMetadata {
   title_options: string[];
@@ -136,14 +194,14 @@ ${script ? `SCRIPT:
 - Title Candidate: ${script.title_candidate}
 - Core Thesis: ${script.core_thesis}
 - Highlight Lines: ${script.highlight_lines?.join(' | ') || 'None'}
-- Full Script (first 500 chars): ${script.full_script?.slice(0, 500) || 'No script'}` : 'No script available — work from the episode info.'}
+- Full Script (first 500 chars): ${script.full_script?.slice(0, 500) || 'No script'}` : 'No script available -- work from the episode info.'}
 
 Return JSON with: title_options (3-5 YouTube-optimized titles), recommended_title, description (YouTube description with section markers), pinned_comment, yt_shorts_caption, ig_reel_caption, ig_story_copy_options (3 options).`;
 
   return generateJSON<GeneratedMetadata>(agentPrompt('Metadata Director', task));
 }
 
-// ─── Thumbnail Generation ───
+// --- Thumbnail Generation ---
 
 export interface GeneratedThumbnail {
   concept_a: string;
@@ -171,7 +229,7 @@ Return JSON with: concept_a (visual description), concept_b (visual description)
   return generateJSON<GeneratedThumbnail>(agentPrompt('Thumbnail Director', task));
 }
 
-// ─── Shorts/Reels Generation ───
+// --- Shorts/Reels Generation (clip extraction from existing script) ---
 
 export interface GeneratedShorts {
   clips: Array<{
@@ -202,7 +260,7 @@ Return JSON with: clips (array of clip objects).`;
   return generateJSON<GeneratedShorts>({ ...agentPrompt('Reelsmith', task), maxTokens: 6144 });
 }
 
-// ─── Story Extraction ───
+// --- Story Extraction ---
 
 export interface GeneratedStory {
   title: string;
@@ -218,7 +276,7 @@ export interface GeneratedStory {
 }
 
 export async function extractStory(rawInput: string): Promise<GeneratedStory> {
-  const task = `Extract a structured story from this raw input. The input is from Alejandro Arango — a founder who has been through extreme life experiences.
+  const task = `Extract a structured story from this raw input. The input is from Alejandro Arango -- a founder who has been through extreme life experiences.
 
 RAW INPUT:
 ${rawInput}
@@ -228,7 +286,7 @@ Return JSON with: title, era (one of: Childhood, Adolescence, Early Career, Busi
   return generateJSON<GeneratedStory>(agentPrompt('Story Miner', task));
 }
 
-// ─── Research Suggestion ───
+// --- Research Suggestion ---
 
 export interface GeneratedResearch {
   title: string;
@@ -254,7 +312,7 @@ EPISODE:
 - Pillar: ${episode.pillar}
 - Core Thesis: ${episode.core_thesis || 'Not yet defined'}
 
-${story ? `STORY: ${story.title} — ${story.philosophical_lesson}` : ''}
+${story ? `STORY: ${story.title} -- ${story.philosophical_lesson}` : ''}
 
 For each reference return: title, reference_type (one of: history, founder, company, philosophy, war, science, culture), domain, core_summary, primary_lesson, why_it_fits, risk_note, source_quality (Strong/Moderate/Weak/Unverified), overuse_risk (Low/Medium/High), tags (array).
 
@@ -263,7 +321,7 @@ Return JSON as an array of reference objects.`;
   return generateJSON<GeneratedResearch[]>(agentPrompt('Research Librarian', task));
 }
 
-// ─── Story Plan (Instagram Stories) ───
+// --- Story Plan (Instagram Stories) ---
 
 export interface GeneratedStoryPlan {
   objective: string;
@@ -293,7 +351,7 @@ Return JSON with: objective, frames (array of: order, type [text/image/video/pol
   return generateJSON<GeneratedStoryPlan>(agentPrompt('Instagram Story Agent', task));
 }
 
-// ─── Weekly Strategy ───
+// --- Weekly Strategy ---
 
 export interface WeeklyStrategy {
   week_theme: string;
@@ -321,21 +379,21 @@ export async function generateWeeklyStrategy(
   const task = `Plan the next weekly content cycle for ArangoRAW.
 
 AVAILABLE STORIES:
-${storyList || 'No stories yet — suggest episode ideas from scratch.'}
+${storyList || 'No stories yet -- suggest episode ideas from scratch.'}
 
 RECENT EPISODES:
-${recentEps || 'No episodes yet — this is the first week.'}
+${recentEps || 'No episodes yet -- this is the first week.'}
 
 ${recentPerformance ? `RECENT PERFORMANCE:\n${recentPerformance}` : ''}
 
 Plan 3-5 episodes for the week. Balance pillars. Create a narrative arc across the week.
 
-Return JSON with: week_theme, episode_recommendations (array of: working_title, pillar, core_thesis, day_suggestion, reasoning), story_theme_map (array of: day, theme — for daily Instagram story themes).`;
+Return JSON with: week_theme, episode_recommendations (array of: working_title, pillar, core_thesis, day_suggestion, reasoning), story_theme_map (array of: day, theme -- for daily Instagram story themes).`;
 
   return generateJSON<WeeklyStrategy>(agentPrompt('Strategy Director', task));
 }
 
-// ─── Studio Manager Assessment ───
+// --- Studio Manager Assessment ---
 
 export interface StudioAssessment {
   summary: string;

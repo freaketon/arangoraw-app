@@ -7,6 +7,7 @@ export {
   generateMetadata,
   generateThumbnail,
   generateShorts,
+  generateReelsScript,
   extractStory,
   suggestResearch,
   generateStoryPlan,
@@ -18,9 +19,17 @@ export type {
   GeneratedMetadata,
   GeneratedThumbnail,
   GeneratedShorts,
+  GeneratedReel,
+  GeneratedReelsPack,
   GeneratedStory,
   GeneratedResearch,
   GeneratedStoryPlan,
   WeeklyStrategy,
   StudioAssessment,
 } from './generators';
+export {
+  BIOGRAPHY_CONTEXT,
+  buildStoryContext,
+  getFullContext,
+} from './biography';
+export type { BiographyStory } from './biography';

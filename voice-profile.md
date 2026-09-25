@@ -111,7 +111,7 @@ Then a short sentence lands the moment:
 **Stated by Alejo:** active, fun, energetic, exciting. It keeps changing. Graphically polished and original. Heavy on storytelling. Fast.
 
 **In practice:**
-- Open with something that makes the reader question what's happening and want to know what comes next. A scene, a strange detail, a stake. The payoff comes later, never in the first line.
+- Open with a person and a plain detail, or with something that makes the reader question what's happening and want to know what comes next. A scene, a strange detail, a stake. The payoff comes later, never in the first line.
 - Every paragraph moves the story or the idea forward. One beat per concept, then cut to the next. He is hyperactive and so is his audience.
 - High density. A lot delivered in a short time. If a line can go, it goes.
 - Visual thinking. Write in shots a camera could film: a place, an object, a sound, a smell.
@@ -124,8 +124,8 @@ Then a short sentence lands the moment:
 
 - **Casey Neistat (his favorite).** Fast cuts, constant momentum, story told through doing, and a creator's "just go make it" energy. Pacing and visual storytelling are the reference.
 - **Ted Lasso.** Warmth and humor inside hard moments, folksy metaphors that land a point, and optimism that never turns preachy.
-- **Julian Alborja.** A distinctive way of storytelling and framing. (Pending: what specifically he likes.)
-- **A TikTok storyteller.** Name pending.
+- **Julian Alborja.** He likes all of it: how he opens, the twists, and the delivery. Use him as the reference for framing and for turns mid-story.
+- **A TikTok crime storyteller (name not found yet).** Talks on camera over cool illustrations and animations. Opens on a person and an ordinary detail ("Her name is Jane. She was a Texan worker working on a deli."), then pulls you into something dark with upbeat, almost happy delivery. This matches Alejo's own move of telling brutal stories in a light, fun register.
 
 ---
 
@@ -149,6 +149,5 @@ Then a short sentence lands the moment:
 ## Open items (to fill with Alejo)
 
 - Cringe list: specific founder posts or creators that make him wince.
-- Julian Alborja: what specifically works in his storytelling and framing.
-- The TikTok storyteller's name.
+- The TikTok storyteller's name, if it turns up.
 - WhatsApp samples (not reachable from this session).

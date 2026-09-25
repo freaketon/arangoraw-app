@@ -141,13 +141,13 @@ Then a short sentence lands the moment:
 8. **No rhetorical question followed by its answer.** He asks real questions ("what in da world are you doing brother?") and leaves them.
 9. **No dwelling.** Never spend more than a beat or two on one concept. If a section explains the same idea twice, cut it and move forward.
 10. **No slow openings.** No context paragraph, no definitions, no "In this post." Start inside the story or on the question.
-11. **No self-pity or victim framing.** Hard things are reported, then he moves forward ("Nothing has never stopped me. It's just the starting position.").
-12. **Private material stays private.** Nothing from private Teams or WhatsApp conversations about money, family or health goes into content unless he writes it himself.
+11. **No guru-coach bait.** Nothing that sounds like "100 ways to make a million dollars" or "This is what will make you rich this year." No numbered money listicles, no get-rich promises, no hype hooks with nothing real behind them. He talks about money plainly, with real numbers from his own life, never as a promise to the reader.
+12. **No self-pity or victim framing.** Hard things are reported, then he moves forward ("Nothing has never stopped me. It's just the starting position.").
+13. **Private material stays private.** Nothing from private Teams or WhatsApp conversations about money, family or health goes into content unless he writes it himself.
 
 ---
 
 ## Open items (to fill with Alejo)
 
-- Cringe list: specific founder posts or creators that make him wince.
 - The TikTok storyteller's name, if it turns up.
 - WhatsApp samples (not reachable from this session).

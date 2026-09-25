@@ -7,7 +7,7 @@ ALEJANDRO ARANGO — BIOGRAPHICAL CONTEXT
 ========================================
 
 KNOWN FACTS:
-- Colombian founder and entrepreneur
+- Serial entrepreneur, creative director and storyteller (born in Colombia, but never introduce him by nationality or city)
 - At 19: quit a corporate internship with only $200 to start a company — everyone called him crazy
 - 2008: Met Laura (major life milestone)
 - Has daughters

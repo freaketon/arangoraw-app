@@ -5,7 +5,8 @@
 
 export const BRAND_TAGLINE = 'Real stories. Wild comebacks. Your turn.';
 export const BRAND_MISSION = 'Be the founder of your own life.';
-export const BRAND_LINE = `ArangoRAW, Alejandro Arango's story-driven media brand. ${BRAND_TAGLINE} ${BRAND_MISSION}`;
+export const BRAND_ROLES = 'Serial entrepreneur. Creative director. Storyteller.';
+export const BRAND_LINE = `ArangoRAW, the media brand of Alejandro Arango (${BRAND_ROLES}). ${BRAND_TAGLINE} ${BRAND_MISSION}`;
 
 export const PILLARS = [
   'Real Stories, Wild Comebacks',
@@ -54,5 +55,6 @@ export const VOICE_RULES = `VOICE (Alejandro Arango):
 - Fun and energetic, with dark, deadpan humor about wild or brutal events. Profanity is fine when the story has it.
 - The lesson comes out of the story in one line at the end, or as a dry aside. Never a spelled-out moral.
 - Never call Alejandro a force of nature, game changer or similar. Show it.
+- Never introduce him by nationality or city.
 - Never use em dashes, contrast framing ("It's not X. It's Y."), rule-of-three lists, rhetorical questions answered right away, or guru-coach bait ("100 ways to make a million").
 - No corporate words: leverage, unlock, empower, journey, synergy, "excited to share".`;

@@ -10,6 +10,8 @@ Built with Alejandro Arango on September 25, 2026. Replaces the six app pillars 
 
 **Who it's for.** People who never felt the system was built for them. They've been trying and struggling, they want to reach a different level, and they want creative, unusual ways to get there. Founders of their own life, whether or not they run a company, broke or billionaire.
 
+**Roles.** Serial entrepreneur. Creative director. Storyteller. Never introduce him by nationality or city.
+
 **Who Alejo is on screen.** The acting force, shown and never claimed. He never calls himself a force of nature, a game changer or anything like it. The content makes people say it about him. The philosophy lives in the message. He doesn't play the philosopher.
 
 **What content has to bring in.** Speaking gigs, book readers, community members. Client work is out of scope.

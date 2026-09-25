@@ -1,6 +1,6 @@
 # Alejandro "Alejo" Arango, Voice Profile
 
-Built from the manuscript of *My Fucked Up Wonder Years* (about 1,090 sentences), *After the Wonder Years (2008 to present)*, alejoarango.co (3 pages), 38 Teams messages, 25 sent emails, and a voice discovery answer on September 25, 2026. WhatsApp was not available.
+Built from the manuscript of *My Fucked Up Wonder Years* (about 1,090 sentences), *After the Wonder Years (2008 to present)*, alejoarango.co (3 pages), 38 Teams messages, 25 sent emails, and two voice discovery answers on September 25, 2026. WhatsApp was not available.
 
 ---
 
@@ -106,6 +106,29 @@ Then a short sentence lands the moment:
 
 ---
 
+## How content should feel
+
+**Stated by Alejo:** active, fun, energetic, exciting. It keeps changing. Graphically polished and original. Heavy on storytelling. Fast.
+
+**In practice:**
+- Open with something that makes the reader question what's happening and want to know what comes next. A scene, a strange detail, a stake. The payoff comes later, never in the first line.
+- Every paragraph moves the story or the idea forward. One beat per concept, then cut to the next. He is hyperactive and so is his audience.
+- High density. A lot delivered in a short time. If a line can go, it goes.
+- Visual thinking. Write in shots a camera could film: a place, an object, a sound, a smell.
+
+**It must never feel:** dull, flat, plain, boring, old, outdated, dumb, or obvious. Nothing easy or instant that the reader already knew before they started.
+
+---
+
+## Voices he admires
+
+- **Casey Neistat (his favorite).** Fast cuts, constant momentum, story told through doing, and a creator's "just go make it" energy. Pacing and visual storytelling are the reference.
+- **Ted Lasso.** Warmth and humor inside hard moments, folksy metaphors that land a point, and optimism that never turns preachy.
+- **Julian Alborja.** A distinctive way of storytelling and framing. (Pending: what specifically he likes.)
+- **A TikTok storyteller.** Name pending.
+
+---
+
 ## Hard boundaries
 
 1. **Never use em dashes.** His raw writing has zero. The AI-edited continuation document is full of them, and that is the clearest tell of edited-not-Alejo copy.
@@ -116,14 +139,16 @@ Then a short sentence lands the moment:
 6. **Do not sanitize.** Keep profanity, violence and drug references when the story has them. Removing them flattens the voice. (Tone down for client-facing or event copy only when asked.)
 7. **No polished symmetry.** No three-item rhetorical lists, no uniform 2 to 3 sentence paragraphs, no hook-explanation-takeaway template. His paragraphs vary wildly.
 8. **No rhetorical question followed by its answer.** He asks real questions ("what in da world are you doing brother?") and leaves them.
-9. **No self-pity or victim framing.** Hard things are reported, then he moves forward ("Nothing has never stopped me. It's just the starting position.").
-10. **Private material stays private.** Nothing from private Teams or WhatsApp conversations about money, family or health goes into content unless he writes it himself.
+9. **No dwelling.** Never spend more than a beat or two on one concept. If a section explains the same idea twice, cut it and move forward.
+10. **No slow openings.** No context paragraph, no definitions, no "In this post." Start inside the story or on the question.
+11. **No self-pity or victim framing.** Hard things are reported, then he moves forward ("Nothing has never stopped me. It's just the starting position.").
+12. **Private material stays private.** Nothing from private Teams or WhatsApp conversations about money, family or health goes into content unless he writes it himself.
 
 ---
 
 ## Open items (to fill with Alejo)
 
-- Cringe list: which founder content makes him wince.
-- What his content must never feel like.
-- Voices he admires, and what specifically he likes in them.
+- Cringe list: specific founder posts or creators that make him wince.
+- Julian Alborja: what specifically works in his storytelling and framing.
+- The TikTok storyteller's name.
 - WhatsApp samples (not reachable from this session).

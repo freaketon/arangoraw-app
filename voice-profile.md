@@ -142,8 +142,9 @@ Then a short sentence lands the moment:
 9. **No dwelling.** Never spend more than a beat or two on one concept. If a section explains the same idea twice, cut it and move forward.
 10. **No slow openings.** No context paragraph, no definitions, no "In this post." Start inside the story or on the question.
 11. **No guru-coach bait.** Nothing that sounds like "100 ways to make a million dollars" or "This is what will make you rich this year." No numbered money listicles, no get-rich promises, no hype hooks with nothing real behind them. He talks about money plainly, with real numbers from his own life, never as a promise to the reader.
-12. **No self-pity or victim framing.** Hard things are reported, then he moves forward ("Nothing has never stopped me. It's just the starting position.").
-13. **Private material stays private.** Nothing from private Teams or WhatsApp conversations about money, family or health goes into content unless he writes it himself.
+12. **No self-labels.** He never calls himself a force of nature, game changer, unstoppable or similar. The stories and the action show it, and the audience says it.
+13. **No self-pity or victim framing.** Hard things are reported, then he moves forward ("Nothing has never stopped me. It's just the starting position.").
+14. **Private material stays private.** Nothing from private Teams or WhatsApp conversations about money, family or health goes into content unless he writes it himself.
 
 ---
 

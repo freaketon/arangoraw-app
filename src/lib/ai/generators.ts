@@ -1,6 +1,7 @@
 import { generateJSON } from './client';
 import { SYSTEM_PROMPTS, AgentName } from './prompts';
 import { getFullContext, type BiographyStory } from './biography';
+import { PILLARS } from '@/lib/pillars';
 import type {
   Episode,
   StoryRecord,
@@ -160,7 +161,7 @@ Each Reel must be:
 - 30-60 seconds when read aloud
 - Opening with a hook that stops scroll
 - Focused on ONE core insight
-- Written in Alejandro's raw, philosophical voice
+- Written in Alejandro's voice (see VOICE rules)
 
 Return JSON with: reels (array of objects with: hook, script, caption, hashtags).`;
 
@@ -281,7 +282,7 @@ export async function extractStory(rawInput: string): Promise<GeneratedStory> {
 RAW INPUT:
 ${rawInput}
 
-Return JSON with: title, era (one of: Childhood, Adolescence, Early Career, Business Building, Crisis, Reinvention, Present), story_type, raw_event_summary, sensory_details, emotional_truth, philosophical_lesson, related_pillars (array from: Psychology of Chaos, Media Intelligence, Identity Shift, Physics of Business, The Survivor, External Mirrors), confidence_level (1-5), tags (array of keywords).`;
+Return JSON with: title, era (one of: Childhood, Adolescence, Early Career, Business Building, Crisis, Reinvention, Present), story_type, raw_event_summary, sensory_details, emotional_truth, philosophical_lesson, related_pillars (array from: ${PILLARS.join(', ')}), confidence_level (1-5), tags (array of keywords).`;
 
   return generateJSON<GeneratedStory>(agentPrompt('Story Miner', task));
 }

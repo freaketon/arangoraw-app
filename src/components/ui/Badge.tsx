@@ -1,3 +1,5 @@
+import { normalizePillar, type Pillar } from '@/lib/pillars';
+
 type BadgeVariant = 'default' | 'gold' | 'green' | 'red' | 'blue' | 'amber' | 'purple' | 'muted';
 
 const VARIANTS: Record<BadgeVariant, string> = {
@@ -43,13 +45,11 @@ export function StateBadge({ state }: { state: string }) {
 }
 
 export function PillarBadge({ pillar }: { pillar: string }) {
-  const map: Record<string, BadgeVariant> = {
-    'Psychology of Chaos': 'purple',
-    'Media Intelligence': 'blue',
-    'Identity Shift': 'gold',
-    'Physics of Business': 'green',
-    'The Survivor': 'red',
-    'External Mirrors': 'amber',
+  const map: Record<Pillar, BadgeVariant> = {
+    'Real Stories, Wild Comebacks': 'red',
+    'Your Turn': 'gold',
+    'In Motion': 'blue',
   };
-  return <Badge variant={map[pillar] || 'default'}>{pillar}</Badge>;
+  const current = normalizePillar(pillar);
+  return <Badge variant={map[current]}>{current}</Badge>;
 }

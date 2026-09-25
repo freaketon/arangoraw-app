@@ -7,8 +7,9 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import { useAIGenerate } from '@/hooks/useAIGenerate';
+import { PILLARS as CONTENT_PILLARS } from '@/lib/pillars';
 
-const PILLARS = ['All', 'Psychology of Chaos', 'Media Intelligence', 'Identity Shift', 'Physics of Business', 'The Survivor', 'External Mirrors'];
+const PILLARS = ['All', ...CONTENT_PILLARS];
 const ERAS = ['All', 'Colombia', 'Immigration', 'Corporate', 'Founder', 'Family', 'Philosophical', 'Meta'];
 
 export default function StoryLibraryPage() {
@@ -167,7 +168,7 @@ function StoryDetail({ story, onUpdate }: { story: any; onUpdate: () => void }) 
       {story.philosophical_lesson && (
         <Card>
           <CardBody>
-            <div className="text-[11px] text-text-muted uppercase tracking-wider mb-2">Philosophical Lesson</div>
+            <div className="text-[11px] text-text-muted uppercase tracking-wider mb-2">Lesson</div>
             <div className="text-sm text-text-secondary whitespace-pre-wrap">{story.philosophical_lesson}</div>
           </CardBody>
         </Card>
@@ -317,7 +318,7 @@ function CreateStoryModal({ onClose, onCreate, onExtractDone }: { onClose: () =>
             <div className="px-5 py-4 space-y-4">
               <div>
                 <label className="text-[11px] text-text-muted uppercase tracking-wider block mb-1">Paste Raw Text</label>
-                <p className="text-xs text-text-muted mb-2">Paste a raw memory, journal entry, conversation, or experience. AI will extract the story structure, emotional truth, philosophical lesson, sensory details, and classify it into the right pillar and era.</p>
+                <p className="text-xs text-text-muted mb-2">Paste a raw memory, journal entry, conversation, or experience. AI will extract the story structure, emotional truth, lesson, sensory details, and classify it into the right pillar and era.</p>
                 <textarea
                   value={rawInput}
                   onChange={e => setRawInput(e.target.value)}

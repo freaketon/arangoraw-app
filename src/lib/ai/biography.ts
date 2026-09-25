@@ -17,7 +17,7 @@ KNOWN FACTS:
 - Survived near-death experiences
 - Navigated business crises and reinvention
 - Philosophical thinker sharing hard-won wisdom with founders
-- Brand: ArangoRAW — philosophical media for founders
+- Brand: ArangoRAW. Real stories. Wild comebacks. Your turn. Mission: be the founder of your own life.
 
 ERAS THAT NEED MORE STORIES FROM ALEJANDRO:
 (These are gaps — do NOT fill them with invented stories)

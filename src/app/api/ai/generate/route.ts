@@ -33,6 +33,7 @@ import {
 } from '@/lib/db';
 import type { AgentName } from '@/lib/ai';
 import type { BiographyStory } from '@/lib/ai/biography';
+import { normalizePillar } from '@/lib/pillars';
 
 type GenerateAction =
   | 'generate_script'
@@ -236,7 +237,7 @@ export async function POST(request: NextRequest) {
             title: generated.title,
             hook: generated.emotional_truth || generated.raw_event_summary || '',
             narrative: generated.raw_event_summary || '',
-            pillar: generated.related_pillars?.[0] || 'Psychology of Chaos',
+            pillar: normalizePillar(generated.related_pillars?.[0]),
             era: generated.era || '',
             tags: generated.tags || [],
             state: 'intake',

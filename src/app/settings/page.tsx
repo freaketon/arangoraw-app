@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Card, { CardHeader, CardBody } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import { PILLARS, PILLAR_DESCRIPTIONS } from '@/lib/pillars';
 
 export default function SettingsPage() {
   const [agents, setAgents] = useState<any[]>([]);
@@ -154,8 +155,11 @@ function SystemSettings() {
         <CardHeader><span className="text-sm font-medium">Content Pillars</span></CardHeader>
         <CardBody>
           <div className="space-y-1.5">
-            {['Psychology of Chaos', 'Media Intelligence', 'Identity Shift', 'Physics of Business', 'The Survivor', 'External Mirrors'].map(p => (
-              <div key={p} className="text-xs text-text-secondary py-1 px-2 bg-bg-tertiary rounded">{p}</div>
+            {PILLARS.map(p => (
+              <div key={p} className="text-xs text-text-secondary py-1 px-2 bg-bg-tertiary rounded">
+                <div className="font-medium">{p}</div>
+                <div className="text-text-muted mt-0.5">{PILLAR_DESCRIPTIONS[p]}</div>
+              </div>
             ))}
           </div>
         </CardBody>

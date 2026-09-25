@@ -4,13 +4,8 @@
 
 // --- Enums / Union Types ---
 
-export type Pillar =
-  | 'Psychology of Chaos'
-  | 'Media Intelligence'
-  | 'Identity Shift'
-  | 'Physics of Business'
-  | 'The Survivor'
-  | 'External Mirrors';
+export type { Pillar } from './pillars';
+import type { Pillar } from './pillars';
 
 export type EpisodeState =
   | 'Idea'

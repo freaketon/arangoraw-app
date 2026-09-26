@@ -20,7 +20,7 @@ Built with Alejandro Arango on September 25, 2026. Replaces the six app pillars 
 
 ## Pillar 1: Real Stories, Wild Comebacks
 
-**Description.** True stories told fast and visual like movie scenes. Two sources feed it. Alejo's own life from the book and the story library (Medellín, Canada, the army, film, Contento, the takeover, Mois, the hospital, leaving Colombia). And stories he goes looking for: role models, other people's comebacks, big human stories that connect to something he lived. When a story is someone else's, it's paired with a moment from his own life, so the connection is his and nobody else's. Every piece is one scene with one turn, and it ends on what the story made possible.
+**Description.** True stories told fast and visual like movie scenes. Two sources feed it. Alejo's own life from the book and the story library (Medellín, Canada, the army, film, Contento, the takeover, Mowies, the hospital, leaving Colombia). And stories he goes looking for: role models, other people's comebacks, big human stories that connect to something he lived. When a story is someone else's, it's paired with a moment from his own life, so the connection is his and nobody else's. Every piece is one scene with one turn, and it ends on what the story made possible.
 
 **Audience.** Strangers scrolling. They don't know Alejo and aren't looking for help. They stay because the story is too good to skip. Cold, top of funnel.
 

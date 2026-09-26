@@ -16,20 +16,11 @@ import {
   transitionEpisode,
 } from '@/lib/db';
 import type { Pillar } from '@/lib/types';
+import { normalizePillar, DEFAULT_PILLAR } from '@/lib/pillars';
 import type { BiographyStory } from '@/lib/ai/biography';
 
-const VALID_PILLARS: Pillar[] = [
-  'Psychology of Chaos',
-  'Media Intelligence',
-  'Identity Shift',
-  'Physics of Business',
-  'The Survivor',
-  'External Mirrors',
-];
-
 function toPillar(raw: string): Pillar {
-  const match = VALID_PILLARS.find(p => p.toLowerCase() === raw.toLowerCase());
-  return match || 'Psychology of Chaos';
+  return normalizePillar(raw);
 }
 
 /** Match a story to an episode by pillar keyword overlap */
@@ -147,7 +138,7 @@ export async function POST(request: NextRequest) {
           story_theme_map: strategy.story_theme_map?.map((s, i) => ({
             episode_id: createdEpisodes[i]?.episode_id || '',
             theme: s.theme,
-            pillar: createdEpisodes[i]?.pillar || 'Psychology of Chaos',
+            pillar: createdEpisodes[i]?.pillar || DEFAULT_PILLAR,
           })) || [],
           episode_ids: [],
           planning_state: 'Planning',

@@ -5,6 +5,11 @@
 import { Episode, EpisodeState, ApprovalState, Pillar } from '@/lib/types';
 import { create, read, update, list, query, generateId, logEvent, search } from './store';
 import { validateEpisodeTransition } from '@/lib/state-machines';
+import { normalizePillar } from '@/lib/pillars';
+
+function withCurrentPillar(episode: Episode): Episode {
+  return { ...episode, pillar: normalizePillar(episode.pillar) };
+}
 
 const COLLECTION = 'episodes';
 
@@ -44,19 +49,20 @@ export function createEpisode(data: {
 }
 
 export function getEpisode(id: string): Episode | null {
-  return read<Episode>(COLLECTION, id);
+  const episode = read<Episode>(COLLECTION, id);
+  return episode ? withCurrentPillar(episode) : null;
 }
 
 export function listEpisodes(): Episode[] {
-  return list<Episode>(COLLECTION);
+  return list<Episode>(COLLECTION).map(withCurrentPillar);
 }
 
 export function getEpisodesByState(state: EpisodeState): Episode[] {
-  return query<Episode>(COLLECTION, e => e.state === state);
+  return query<Episode>(COLLECTION, e => e.state === state).map(withCurrentPillar);
 }
 
 export function getEpisodesByWeek(weekId: string): Episode[] {
-  return query<Episode>(COLLECTION, e => e.week_id === weekId);
+  return query<Episode>(COLLECTION, e => e.week_id === weekId).map(withCurrentPillar);
 }
 
 export function transitionEpisode(id: string, newState: EpisodeState): { success: boolean; episode?: Episode; error?: string } {
@@ -101,5 +107,5 @@ export function attachReference(episodeId: string, referenceId: string): Episode
 }
 
 export function searchEpisodes(term: string): Episode[] {
-  return search<Episode>(COLLECTION, ['working_title', 'final_title', 'core_thesis', 'mental_model', 'pillar'], term);
+  return search<Episode>(COLLECTION, ['working_title', 'final_title', 'core_thesis', 'mental_model', 'pillar'], term).map(withCurrentPillar);
 }

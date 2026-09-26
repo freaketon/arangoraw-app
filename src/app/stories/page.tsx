@@ -270,7 +270,7 @@ export default function StoriesPage() {
                       <Section label="Emotional Truth" text={story.emotional_truth} />
                     )}
                     {story.philosophical_lesson && (
-                      <Section label="Philosophical Lesson" text={story.philosophical_lesson} />
+                      <Section label="Lesson" text={story.philosophical_lesson} />
                     )}
                     {story.sensory_details && story.sensory_details.length > 0 && (
                       <div>

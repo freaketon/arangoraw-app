@@ -7,7 +7,7 @@ ALEJANDRO ARANGO — BIOGRAPHICAL CONTEXT
 ========================================
 
 KNOWN FACTS:
-- Colombian founder and entrepreneur
+- Serial entrepreneur, creative director and storyteller (born in Colombia, but never introduce him by nationality or city)
 - At 19: quit a corporate internship with only $200 to start a company — everyone called him crazy
 - 2008: Met Laura (major life milestone)
 - Has daughters
@@ -17,7 +17,7 @@ KNOWN FACTS:
 - Survived near-death experiences
 - Navigated business crises and reinvention
 - Philosophical thinker sharing hard-won wisdom with founders
-- Brand: ArangoRAW — philosophical media for founders
+- Brand: ArangoRAW. Real stories. Wild comebacks. Your turn. Mission: be the founder of your own life.
 
 ERAS THAT NEED MORE STORIES FROM ALEJANDRO:
 (These are gaps — do NOT fill them with invented stories)

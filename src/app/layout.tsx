@@ -5,7 +5,7 @@ import TopBar from "@/components/layout/TopBar";
 
 export const metadata: Metadata = {
   title: "ArangoRAW — Media System",
-  description: "Agent-first media operating system for philosophical content",
+  description: "Agent-first media operating system for ArangoRAW. Real stories. Wild comebacks. Your turn.",
 };
 
 export default function RootLayout({

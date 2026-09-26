@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { initializeDataStore } from './store';
+import { normalizePillar } from '@/lib/pillars';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const STORIES_FILE = path.join(DATA_DIR, 'stories.json');
@@ -31,7 +32,8 @@ function readStories(): Story[] {
     fs.writeFileSync(STORIES_FILE, JSON.stringify([], null, 2));
     return [];
   }
-  return JSON.parse(fs.readFileSync(STORIES_FILE, 'utf-8'));
+  const stories: Story[] = JSON.parse(fs.readFileSync(STORIES_FILE, 'utf-8'));
+  return stories.map(s => (s.pillar ? { ...s, pillar: normalizePillar(s.pillar) } : s));
 }
 
 function writeStories(stories: Story[]): void {
@@ -89,7 +91,10 @@ export function searchStories(query: string): Story[] {
 export function filterStories(filters: { era?: string; pillar?: string }): Story[] {
   let stories = readStories();
   if (filters.era) stories = stories.filter(s => s.era === filters.era);
-  if (filters.pillar) stories = stories.filter(s => s.pillar === filters.pillar);
+  if (filters.pillar) {
+    const pillar = normalizePillar(filters.pillar);
+    stories = stories.filter(s => s.pillar === pillar);
+  }
   return stories;
 }
 
